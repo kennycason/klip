@@ -92,7 +92,7 @@ object Routes {
         }
     }
 
-    suspend fun ApplicationCall.handleImageRequest(s3Client: S3Client, env: Env) {
+    private suspend fun ApplicationCall.handleImageRequest(s3Client: S3Client, env: Env) {
         val size = parameters["size"] ?: ""
         val match = Regex("(\\d+)x(\\d+)").matchEntire(size)
 
@@ -111,7 +111,7 @@ object Routes {
 
         logger.info("Processing image: Path=$path, Size=${width}x$height, Grayscale=$grayscale, Crop=$crop, Rotate=$rotate")
 
-        val s3Image = ImageFetcher.fetchFromS3(s3Client, env.aws.s3Bucket, path)
+        val s3Image = S3.readFile(s3Client, env.aws.s3Bucket, path)
         if (s3Image != null) {
             try {
                 val processedImage = ImageProcessor.processImage(s3Image, width, height, grayscale, crop, rotate)
@@ -126,9 +126,9 @@ object Routes {
         }
     }
 
-    suspend fun ApplicationCall.handleRawImageRequest(s3Client: S3Client, env: Env) {
+    private suspend fun ApplicationCall.handleRawImageRequest(s3Client: S3Client, env: Env) {
         val path = parameters.getAll("path")?.joinToString("/") ?: ""
-        val s3Object = ImageFetcher.fetchFromS3(s3Client, env.aws.s3Bucket, path)
+        val s3Object = S3.readFile(s3Client, env.aws.s3Bucket, path)
         if (s3Object != null) {
             response.headers.append("Content-Type", s3Object.contentType.toString())
             respondBytes(s3Object.data)
@@ -138,9 +138,8 @@ object Routes {
     }
 }
 
-object ImageFetcher {
-
-    suspend fun fetchFromS3(s3Client: S3Client, bucket: String, key: String): KlipImage? {
+object S3 {
+    suspend fun readFile(s3Client: S3Client, bucket: String, key: String): KlipImage? {
         return try {
             val request = GetObjectRequest {
                 this.bucket = bucket
@@ -168,21 +167,17 @@ object ImageProcessor {
         height: Int,
         grayscale: Boolean,
         crop: Boolean,
-        rotate: Float?
+        angle: Float?
     ): ByteArray {
+        val transforms: List<(BufferedImage) -> BufferedImage> = listOfNotNull(
+            { img -> if (crop) cropImage(img, width, height) else img },
+            { img -> resizeImage(img, width, height) },
+            { img -> if (grayscale) applyGrayscale(img) else img },
+            { img -> if (angle != null) applyRotation(img, angle) else img }
+        )
         val inputImage: BufferedImage = ImageIO.read(ByteArrayInputStream(image.data))
-
-        // crop first
-        var bufferedImage = if (crop) cropImage(inputImage, width, height) else inputImage
-        bufferedImage = resizeImage(bufferedImage, width, height)
-        if (grayscale) {
-            bufferedImage = applyGrayscale(bufferedImage)
-        }
-        if (rotate != null) {
-            bufferedImage = applyRotation(bufferedImage, rotate)
-        }
-
-        return bufferedImage.toByteArray(format = image.contentType.contentSubtype)
+        val outputImage = transforms.fold(inputImage) { img, transform -> transform(img) }
+        return outputImage.toByteArray(format = image.contentType.contentSubtype)
     }
 
     private fun resizeImage(image: BufferedImage, width: Int, height: Int): BufferedImage {
@@ -213,7 +208,6 @@ object ImageProcessor {
         val cos = abs(cos(radians))
         val newWidth = (image.width * cos + image.height * sin).toInt()
         val newHeight = (image.width * sin + image.height * cos).toInt()
-
         val rotatedImage = BufferedImage(newWidth, newHeight, image.type)
         val graphics = rotatedImage.createGraphics()
         graphics.translate((newWidth - image.width) / 2, (newHeight - image.height) / 2)
