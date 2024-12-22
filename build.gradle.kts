@@ -56,5 +56,5 @@ tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
 }
 
 application {
-    mainClass.set("AppKt") // Replace with your main class if different
+    mainClass.set("klip.AppKt") // Replace with your main class if different
 }
