@@ -113,13 +113,23 @@ object Routes {
         val grayscale = request.queryParameters["grayscale"]?.toBoolean() ?: false
         val crop = request.queryParameters["crop"]?.toBoolean() ?: false
         val rotate = request.queryParameters["rotate"]?.toFloatOrNull()
+        val flipH = request.queryParameters["flipH"]?.toBoolean() ?: false
+        val flipV = request.queryParameters["flipV"]?.toBoolean() ?: false
 
         if (width == null || height == null) {
             respond(HttpStatusCode.BadRequest, "Invalid width or height")
             return
         }
 
-        val cacheKey = generateCacheKey(path, width, height, grayscale, crop, rotate)
+        val cacheKey =
+            generateCacheKey(
+                path, width, height,
+                grayscale = grayscale,
+                crop = crop,
+                flipH = flipH,
+                flipV = flipV,
+                rotate = rotate
+            )
         logger.info("Cache Key: $cacheKey")
 
         // check cache
@@ -137,7 +147,16 @@ object Routes {
             return
         }
         try {
-            val processedImage = ImageProcessor.processImage(s3Image, width, height, grayscale, crop, rotate)
+            val processedImage = ImageProcessor.processImage(
+                s3Image,
+                width,
+                height,
+                grayscale = grayscale,
+                crop = crop,
+                flipH = flipH,
+                flipV = flipV,
+                rotate = rotate
+            )
 
             writeToCache(s3Client, env, cacheKey, processedImage)
 
@@ -230,7 +249,9 @@ object S3 {
         height: Int,
         grayscale: Boolean,
         crop: Boolean,
-        rotate: Float?
+        flipH: Boolean,
+        flipV: Boolean,
+        rotate: Float?,
     ): String {
         val baseName = path.substringBeforeLast('.') // remove the extension
         val extension = getFileExtension(path)
@@ -240,6 +261,8 @@ object S3 {
         if (grayscale) params.add("g1")
         if (crop) params.add("c1")
         if (rotate != null && rotate != 0f) params.add("r${rotate.toInt()}")
+        if (flipH) params.add("h1")
+        if (flipV) params.add("v1")
 
         return "${baseName}-${params.joinToString("")}.$extension"
     }
@@ -253,20 +276,24 @@ object ImageProcessor {
         height: Int,
         grayscale: Boolean,
         crop: Boolean,
-        angle: Float?
+        flipH: Boolean,
+        flipV: Boolean,
+        rotate: Float?
     ): ByteArray {
         val transforms: List<(BufferedImage) -> BufferedImage> = listOfNotNull(
             { img -> if (crop) cropImage(img, width, height) else img },
             { img -> resizeImage(img, width, height) },
             { img -> if (grayscale) applyGrayscale(img) else img },
-            { img -> if (angle != null) applyRotation(img, angle) else img }
+            { img -> if (flipH) applyFlipH(img) else img },
+            { img -> if (flipV) applyFlipV(img) else img },
+            { img -> if (rotate != null) applyRotation(img, rotate) else img }
         )
         val inputImage: BufferedImage = ImageIO.read(ByteArrayInputStream(image.data))
         val outputImage = transforms.fold(inputImage) { img, transform -> transform(img) }
         return outputImage.toByteArray(format = image.contentType.contentSubtype)
     }
 
-    private fun resizeImage(image: BufferedImage, width: Int, height: Int): BufferedImage {
+    fun resizeImage(image: BufferedImage, width: Int, height: Int): BufferedImage {
         val resized = BufferedImage(width, height, BufferedImage.TYPE_INT_RGB)
         val g = resized.createGraphics()
         g.drawImage(image.getScaledInstance(width, height, Image.SCALE_SMOOTH), 0, 0, null)
@@ -274,13 +301,13 @@ object ImageProcessor {
         return resized
     }
 
-    private fun cropImage(image: BufferedImage, width: Int, height: Int): BufferedImage {
+    fun cropImage(image: BufferedImage, width: Int, height: Int): BufferedImage {
         val startX = (image.width - width) / 2
         val startY = (image.height - height) / 2
         return image.getSubimage(startX, startY, width, height)
     }
 
-    private fun applyGrayscale(image: BufferedImage): BufferedImage {
+    fun applyGrayscale(image: BufferedImage): BufferedImage {
         val grayImage = BufferedImage(image.width, image.height, BufferedImage.TYPE_BYTE_GRAY)
         val g = grayImage.createGraphics()
         g.drawImage(image, 0, 0, null)
@@ -288,8 +315,24 @@ object ImageProcessor {
         return grayImage
     }
 
-    private fun applyRotation(image: BufferedImage, angle: Float): BufferedImage {
-        val radians = Math.toRadians(angle.toDouble())
+    fun applyFlipH(image: BufferedImage): BufferedImage {
+        val flipped = BufferedImage(image.width, image.height, image.type)
+        val graphics = flipped.createGraphics()
+        graphics.drawImage(image, image.width, 0, 0, image.height, 0, 0, image.width, image.height, null)
+        graphics.dispose()
+        return flipped
+    }
+
+    fun applyFlipV(image: BufferedImage): BufferedImage {
+        val flipped = BufferedImage(image.width, image.height, image.type)
+        val graphics = flipped.createGraphics()
+        graphics.drawImage(image, 0, image.height, image.width, 0, 0, 0, image.width, image.height, null)
+        graphics.dispose()
+        return flipped
+    }
+
+    fun applyRotation(image: BufferedImage, rotate: Float): BufferedImage {
+        val radians = Math.toRadians(rotate.toDouble())
         val sin = abs(sin(radians))
         val cos = abs(cos(radians))
         val newWidth = (image.width * cos + image.height * sin).toInt()

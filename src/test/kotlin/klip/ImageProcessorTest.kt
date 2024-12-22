@@ -3,6 +3,7 @@ package klip
 import io.ktor.http.ContentType
 import strikt.api.expectThat
 import strikt.assertions.isEqualTo
+import java.awt.Color
 import java.awt.image.BufferedImage
 import java.io.ByteArrayOutputStream
 import javax.imageio.ImageIO
@@ -20,7 +21,9 @@ class ImageProcessorTest {
             height = 50,
             grayscale = false,
             crop = false,
-            angle = null
+            flipH = false,
+            flipV = false,
+            rotate = null
         )
 
         val outputImage = ImageIO.read(result.inputStream())
@@ -39,7 +42,9 @@ class ImageProcessorTest {
             height = 100,
             grayscale = true,
             crop = false,
-            angle = null
+            flipH = false,
+            flipV = false,
+            rotate = null
         )
 
         val outputImage = ImageIO.read(result.inputStream())
@@ -59,7 +64,9 @@ class ImageProcessorTest {
             height = height,
             grayscale = false,
             crop = false,
-            angle = 90f
+            flipH = false,
+            flipV = false,
+            rotate = 90f
         )
 
         val outputImage = ImageIO.read(result.inputStream())
@@ -67,6 +74,30 @@ class ImageProcessorTest {
         // rotating by 90 degrees swaps width and height
         expectThat(outputImage.width).isEqualTo(height)
         expectThat(outputImage.height).isEqualTo(width)
+    }
+
+    @Test
+    fun `flipH should horizontally flip image`() {
+        val image = BufferedImage(2, 1, BufferedImage.TYPE_INT_RGB)
+        image.setRGB(0, 0, Color.RED.rgb)
+        image.setRGB(1, 0, Color.BLUE.rgb)
+
+        val flipped = ImageProcessor.applyFlipH(image)
+
+        expectThat(Color(flipped.getRGB(0, 0))).isEqualTo(Color.BLUE) // left becomes right
+        expectThat(Color(flipped.getRGB(1, 0))).isEqualTo(Color.RED)  // right becomes left
+    }
+
+    @Test
+    fun `flipV should vertically flip image`() {
+        val image = BufferedImage(1, 2, BufferedImage.TYPE_INT_RGB)
+        image.setRGB(0, 0, Color.RED.rgb)
+        image.setRGB(0, 1, Color.BLUE.rgb)
+
+        val flipped = ImageProcessor.applyFlipV(image)
+
+        expectThat(Color(flipped.getRGB(0, 0))).isEqualTo(Color.BLUE) // top becomes bottom
+        expectThat(Color(flipped.getRGB(0, 1))).isEqualTo(Color.RED)  // bottom becomes top
     }
 
     private fun createTestImage(width: Int = 100, height: Int = 100, format: String = "png"): ByteArray {

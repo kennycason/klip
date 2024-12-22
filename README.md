@@ -60,6 +60,8 @@ GET http://localhost:8080/img/properties/1/04c08449e1261fedc2eb1a6a99245531.png
 
 ---
 
+
+
 ## Resize Image
 
 ```
@@ -85,6 +87,8 @@ GET http://localhost:8080/img/250x250/properties/1/04c08449e1261fedc2eb1a6a99245
 
 ---
 
+
+
 ## Grayscale Filter
 
 ```
@@ -105,9 +109,11 @@ Example:
 GET http://localhost:8080/img/250x250/properties/1/04c08449e1261fedc2eb1a6a99245531.png?grayscale=true
 ```
 
-![Grayscale Image](https://github.com/kennycason/klip/blob/main/images/resized_and_grayscale.png?raw=true)
+![Grayscale Image](https://github.com/kennycason/klip/blob/main/images/resized_grayscale.png?raw=true)
 
 ---
+
+
 
 ## Center Crop
 
@@ -132,6 +138,80 @@ GET http://localhost:8080/img/250x250/properties/1/04c08449e1261fedc2eb1a6a99245
 ![Cropped Image](https://github.com/kennycason/klip/blob/main/images/cropped.png?raw=true)
 
 ---
+
+
+
+## Flip Horizontally
+
+```
+GET /img/{width}x{height}/{path/to/image}?flipH=true
+```
+
+Flip the image horizontally (left-to-right).
+
+Query Parameters:
+
+| Parameter | Type    | Required | Default | Description                                      |
+|-----------|---------|----------|---------|--------------------------------------------------|
+| `flipH`   | Boolean | No       | false   | Flips the image horizontally (left-to-right).    |
+
+Example:
+
+```bash
+GET http://localhost:8080/img/250x250/properties/1/04c08449e1261fedc2eb1a6a99245531.png?flipH=true
+```
+
+![Flipped Horizontally](https://github.com/kennycason/klip/blob/main/images/resized_fliph.png?raw=true)
+
+---
+
+
+
+## Flip Vertically
+
+```
+GET /img/{width}x{height}/{path/to/image}?flipV=true
+```
+
+Flip the image vertically (top-to-bottom).
+
+Query Parameters:
+
+| Parameter | Type    | Required | Default | Description                                   |
+|-----------|---------|----------|---------|-----------------------------------------------|
+| `flipV`   | Boolean | No       | false   | Flips the image vertically (top-to-bottom).    |
+
+Example:
+
+```bash
+GET http://localhost:8080/img/250x250/properties/1/04c08449e1261fedc2eb1a6a99245531.png?flipV=true
+```
+
+![Flipped Vertically](https://github.com/kennycason/klip/blob/main/images/resized_flipv.png?raw=true)
+
+---
+
+
+
+## Combine Flips
+
+```
+GET /img/{width}x{height}/{path/to/image}?flipH=true&flipV=true
+```
+
+Flip the image both horizontally and vertically.
+
+Example - Flip both horizontally and vertically:
+
+```bash
+GET http://localhost:8080/img/250x250/properties/1/04c08449e1261fedc2eb1a6a99245531.png?flipH=true&flipV=true
+```
+
+![Flipped Both](https://github.com/kennycason/klip/blob/main/images/flippedHV.png?raw=true)
+
+---
+
+
 
 ## Rotate Image
 
