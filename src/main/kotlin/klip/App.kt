@@ -15,6 +15,7 @@ import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import klip.Routes.setup
 import klip.S3.checkCache
+import klip.S3.generateCacheKey
 import klip.S3.writeToCache
 import klip.image.toByteArray
 import kotlinx.serialization.Serializable
@@ -43,8 +44,10 @@ data class Env(
     )
 
     data class Cache(
-        val cacheBucket: String? = System.getenv("KLIP_CACHE_BUCKET"),              // optional, defaults to source bucket
-        val cachePrefix: String = System.getenv("KLIP_CACHE_FOLDER") ?: "_cache/"   // prefix for cached files
+        // optional, defaults to source bucket
+        val cacheBucket: String = System.getenv("KLIP_CACHE_BUCKET").ifBlank { System.getenv("KLIP_S3_BUCKET") },
+        // prefix for cached files
+        val cachePrefix: String = System.getenv("KLIP_CACHE_FOLDER").ifBlank { "_cache/" }
     )
 }
 
@@ -156,27 +159,6 @@ object Routes {
             respond(HttpStatusCode.NotFound, "File not found: $path")
         }
     }
-
-    // hash path + params to create a unique identifier
-    private fun generateCacheKey(
-        path: String,
-        width: Int,
-        height: Int,
-        grayscale: Boolean,
-        crop: Boolean,
-        rotate: Float?
-    ): String {
-        val params = listOf(
-            "w$width", "h$height",
-            if (grayscale) "g1" else "g0",
-            if (crop) "c1" else "c0",
-            "r${rotate ?: 0}"
-        ).joinToString("_")
-
-        val extension = getFileExtension(path)
-        val hash = "$path-$params".hashCode().toString()
-        return "$path-$hash.$extension"
-    }
 }
 
 object S3 {
@@ -240,6 +222,26 @@ object S3 {
             contentType = "image/$extension"
         }
         s3Client.putObject(request)
+    }
+
+    fun generateCacheKey(
+        path: String,
+        width: Int,
+        height: Int,
+        grayscale: Boolean,
+        crop: Boolean,
+        rotate: Float?
+    ): String {
+        val baseName = path.substringBeforeLast('.') // remove the extension
+        val extension = getFileExtension(path)
+
+        // only include active transforms in key
+        val params = mutableListOf("${width}x${height}")
+        if (grayscale) params.add("g1")
+        if (crop) params.add("c1")
+        if (rotate != null && rotate != 0f) params.add("r${rotate.toInt()}")
+
+        return "${baseName}-${params.joinToString("")}.$extension"
     }
 }
 
