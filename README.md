@@ -1,31 +1,48 @@
 # Klip - Kotlin Image Processing Server
 
-Klip is a lightweight Kotlin-based image processing server designed to handle dynamic transformations on images stored in AWS S3. It supports resizing, cropping, grayscale filters, and rotation via HTTP GET requests.
+Klip is a lightweight Kotlin-based image processing server designed to handle dynamic transformations on images stored in AWS S3. 
+It supports caching, resizing, cropping, grayscale filters, and rotation via HTTP GET requests.
 
 ---
 
-## Installation + Run
+# Installation + Run
 
-### Prerequisites
+## Prerequisites
 - Java 21+ installed
 
-### Run Klip Server
+
+##  Environment Configuration (Env)
+
+| Section | Variable                | Type   | Default       | Description                                                             |
+|---------|-------------------------|--------|---------------|-------------------------------------------------------------------------|
+| **HTTP**| `KLIP_HTTP_PORT`        | Int    | `8080`        | The HTTP port the server listens on.                                    |
+| **AWS** | `KLIP_AWS_REGION`       | String | -             | AWS region for S3 bucket (e.g., `us-west-2`).                           |
+| **AWS** | `KLIP_S3_BUCKET`        | String | -             | The S3 bucket name where source images are stored.                      |
+| **Cache**| `KLIP_CACHE_BUCKET`    | String | *Same as `KLIP_S3_BUCKET`*  | Optional. S3 bucket name for caching transformed images.                |
+| **Cache**| `KLIP_CACHE_FOLDER`    | String | `_cache/`     | Prefix for cached files. Stored within the cache bucket.                |
+
+---
+
+## Run Klip Server
 
 ```bash
-./gradlew clean build
+KLIP_HTTP_PORT=8080 \
 KLIP_AWS_REGION=us-west-2 \
-KLIP_S3_BUCKET=cdn.arrivedhomes.com \
+KLIP_S3_BUCKET=cdn.klip.com \
+KLIP_CACHE_BUCKET=cdn.klip.com \
+KLIP_CACHE_FOLDER=.cache/ \
 java -jar build/libs/klip-all.jar
 ```
 
-### Default Endpoint
-- Server runs at: `http://0.0.0.0:8080`
+Default local endpoint
+
+- `http://0.0.0.0:8080`
 
 ---
 
-## API Documentation
+# API Documentation
 
-### Get Original Image
+## Get Original Image
 
 ```
 GET /img/{path/to/image}
@@ -43,7 +60,7 @@ GET http://localhost:8080/img/properties/1/04c08449e1261fedc2eb1a6a99245531.png
 
 ---
 
-### Resize Image
+## Resize Image
 
 ```
 GET /img/{width}x{height}/{path/to/image}
@@ -68,7 +85,7 @@ GET http://localhost:8080/img/250x250/properties/1/04c08449e1261fedc2eb1a6a99245
 
 ---
 
-### 3. Grayscale Filter
+## Grayscale Filter
 
 ```
 GET /img/{width}x{height}/{path/to/image}?grayscale=true
@@ -92,7 +109,7 @@ GET http://localhost:8080/img/250x250/properties/1/04c08449e1261fedc2eb1a6a99245
 
 ---
 
-### 4. Center Crop
+## Center Crop
 
 ```
 GET /img/{width}x{height}/{path/to/image}?crop=true
@@ -116,7 +133,7 @@ GET http://localhost:8080/img/250x250/properties/1/04c08449e1261fedc2eb1a6a99245
 
 ---
 
-### 5. Rotate Image
+## Rotate Image
 
 ```
 GET /img/{width}x{height}/{path/to/image}?rotate=45
@@ -140,7 +157,7 @@ GET http://localhost:8080/img/250x250/properties/1/04c08449e1261fedc2eb1a6a99245
 
 ---
 
-### 6. Combine Filters
+## Combine Filters
 
 ```
 GET /img/{width}x{height}/{path/to/image}?grayscale=true&crop=true&rotate=90
@@ -191,8 +208,3 @@ Response:
 ```
 
 ---
-
-## TODO
-
-- Handle crop + resize issues
-- Add caching for performance optimization
