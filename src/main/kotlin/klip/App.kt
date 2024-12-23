@@ -21,11 +21,15 @@ import klip.S3.writeToCache
 import klip.image.toByteArray
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import org.apache.logging.log4j.core.config.Configurator
 import org.apache.logging.log4j.kotlin.logger
+import org.apache.logging.log4j.Level
 import java.awt.Image
 import java.awt.image.BufferedImage
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
+import java.io.File
+import java.util.UUID
 import javax.imageio.IIOImage
 import javax.imageio.ImageIO
 import javax.imageio.ImageWriteParam
@@ -36,6 +40,7 @@ import kotlin.math.sin
 private val logger = logger("Klip")
 
 data class Env(
+    val logLevel: String = System.getenv("KLIP_LOG_LEVEL") ?: "info",
     val http: Http = Http(),
     val aws: Aws = Aws(),
     val cache: Cache = Cache()
@@ -62,12 +67,16 @@ data class KlipHealth(val status: String = "UP")
 data class KlipImage(
     val data: ByteArray,
     val contentType: ContentType
-)
+) {
+    val extension = contentType.contentSubtype
+}
 
 fun main() {
     logger.info { "Starting Klip" }
 
     val env = Env()
+    Configurator.setRootLevel(Level.getLevel(env.logLevel.uppercase()))
+
     logger.info(env)
 
     embeddedServer(CIO, port = env.http.port) {
@@ -168,10 +177,8 @@ object Routes {
             return
         }
         try {
-            val processedImage = ImageProcessor.processImage(
-                s3Image,
-                width,
-                height,
+            val processedImage = GraphicsMagickImageProcessor.processImage(
+                s3Image, width, height,
                 grayscale = grayscale,
                 crop = crop,
                 flipH = flipH,
@@ -297,8 +304,93 @@ object S3 {
     }
 }
 
-object ImageProcessor {
+object GraphicsMagickImageProcessor {
 
+    fun processImage(
+        image: KlipImage,
+        width: Int,
+        height: Int,
+        grayscale: Boolean,
+        crop: Boolean,
+        flipH: Boolean,
+        flipV: Boolean,
+        rotate: Float?,
+        quality: Int?,
+    ): ByteArray {
+        val tempDir = File("/tmp")
+        val inputFile = File(tempDir, "gm_input_${UUID.randomUUID()}.${image.extension}")
+        val outputFile = File(tempDir, "gm_output_${UUID.randomUUID()}.${image.extension}")
+        logger.debug { "Input file: ${inputFile.absolutePath}, Output file: ${outputFile.absolutePath}" }
+
+        inputFile.writeBytes(image.data)
+
+        try {
+            val command = mutableListOf("gm", "convert")
+            command.add(inputFile.absolutePath)
+
+            if (crop) {
+                command.add("-gravity")
+                command.add("center")
+                command.add("-crop")
+                command.add("${width}x${height}+0+0") // Crop to center
+            }
+
+            command.add("-resize")
+            command.add("${width}x${height}") // Resize afterward
+
+            if (grayscale) {
+                command.add("-colorspace")
+                command.add("Gray")
+            }
+
+            if (flipH) {
+                command.add("-flop")
+            }
+
+            if (flipV) {
+                command.add("-flip")
+            }
+
+            if (rotate != null) {
+                command.add("-rotate")
+                command.add(rotate.toString()) // Rotate by degrees
+            }
+
+            if (quality != null) {
+                command.add("-quality")
+                command.add(quality.toString()) // JPEG/PNG compression
+            }
+
+            command.add(outputFile.absolutePath)
+
+            logger.debug { "GraphicsMagick cmd: $command" }
+
+            val process = ProcessBuilder(command)
+                .redirectErrorStream(true)
+                .start()
+
+            // capture output (for debugging errors)
+            val errorOutput = StringBuilder()
+            process.inputStream.bufferedReader().use { reader ->
+                reader.forEachLine { line -> errorOutput.appendLine(line) }
+            }
+
+            val exitCode = process.waitFor()
+            if (exitCode != 0) {
+                logger.error("GraphicsMagick failed: $errorOutput")
+                throw RuntimeException("GraphicsMagick failed: $errorOutput")
+            }
+
+            return outputFile.readBytes()
+
+        } finally {
+            inputFile.delete()
+            outputFile.delete()
+        }
+    }
+}
+
+object ImageIOImageProcessor {
     fun processImage(
         image: KlipImage,
         width: Int,

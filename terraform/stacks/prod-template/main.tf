@@ -4,6 +4,7 @@ module "klip" {
   service_id            = local.service_id
   service_name          = local.service_name
   region                = local.region
+  klip_log_level        = local.klip.log_level
   klip_port             = local.klip.port
   klip_s3_cache_enabled = local.klip.s3_cache_enabled
   klip_s3_bucket        = local.klip.s3_bucket

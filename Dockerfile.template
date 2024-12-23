@@ -1,6 +1,7 @@
 FROM amazoncorretto:21
 
-# set environment variables (can be overridden at runtime)
+# Set environment variables (can be overridden at runtime)
+ENV KLIP_LOG_LEVEL=INFO
 ENV KLIP_HTTP_PORT=8080
 ENV KLIP_AWS_REGION=us-west-2
 ENV KLIP_S3_BUCKET=cdn.klip.com

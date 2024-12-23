@@ -9,13 +9,13 @@ import java.io.ByteArrayOutputStream
 import javax.imageio.ImageIO
 import kotlin.test.Test
 
-class ImageProcessorTest {
+class ImageIOImageProcessorTest {
 
     @Test
     fun `should resize image correctly`() {
         val testImage = KlipImage(createTestImage(), ContentType.Image.PNG)
 
-        val result = ImageProcessor.processImage(
+        val result = GraphicsMagickImageProcessor.processImage(
             image = testImage,
             width = 50,
             height = 50,
@@ -37,7 +37,7 @@ class ImageProcessorTest {
     fun `should apply grayscale filter`() {
         val testImage = KlipImage(createTestImage(), ContentType.Image.PNG)
 
-        val result = ImageProcessor.processImage(
+        val result = GraphicsMagickImageProcessor.processImage(
             image = testImage,
             width = 100,
             height = 100,
@@ -60,7 +60,7 @@ class ImageProcessorTest {
         val height = 100
         val testImage = KlipImage(createTestImage(width, height), ContentType.Image.PNG)
 
-        val result = ImageProcessor.processImage(
+        val result = GraphicsMagickImageProcessor.processImage(
             image = testImage,
             width = width,
             height = height,
@@ -85,7 +85,7 @@ class ImageProcessorTest {
         image.setRGB(0, 0, Color.RED.rgb)
         image.setRGB(1, 0, Color.BLUE.rgb)
 
-        val flipped = ImageProcessor.applyFlipH(image)
+        val flipped = ImageIOImageProcessor.applyFlipH(image)
 
         expectThat(Color(flipped.getRGB(0, 0))).isEqualTo(Color.BLUE) // left becomes right
         expectThat(Color(flipped.getRGB(1, 0))).isEqualTo(Color.RED)  // right becomes left
@@ -97,7 +97,7 @@ class ImageProcessorTest {
         image.setRGB(0, 0, Color.RED.rgb)
         image.setRGB(0, 1, Color.BLUE.rgb)
 
-        val flipped = ImageProcessor.applyFlipV(image)
+        val flipped = ImageIOImageProcessor.applyFlipV(image)
 
         expectThat(Color(flipped.getRGB(0, 0))).isEqualTo(Color.BLUE) // top becomes bottom
         expectThat(Color(flipped.getRGB(0, 1))).isEqualTo(Color.RED)  // bottom becomes top

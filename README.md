@@ -1,33 +1,34 @@
 # Klip - Kotlin Image Processing Server
 
-Klip is a lightweight Kotlin-based image processing server designed to handle dynamic transformations on images stored in AWS S3. 
+Klip is a lightweight Kotlin-based image processing server designed to handle dynamic transformations on images stored in AWS S3.
 It supports caching, resizing, cropping, grayscale filters, and rotation via HTTP GET requests.
 
 ---
 
-## Installation + Run
+## Build Project
 
-### Prerequisites
-- Java 21+
-- Gradle
+```shell
+./gradlew clean build
+```
 
+## Environment Configuration (Env)
 
-##  Environment Configuration (Env)
-
-| Section   | Variable             | Type    | Default                    | Description                                              |
-|-----------|----------------------|---------|----------------------------|----------------------------------------------------------|
-| **HTTP**  | `KLIP_HTTP_PORT`     | Int     | `8080`                     | The HTTP port the server listens on.                     |
-| **AWS**   | `KLIP_AWS_REGION`    | String  | -                          | AWS region for S3 bucket (e.g., `us-west-2`).            |
-| **AWS**   | `KLIP_S3_BUCKET`     | String  | -                          | The S3 bucket name where source images are stored.       |
-| **Cache** | `KLIP_CACHE_ENABLED` | Boolean | True                       | If false, disable image cache.                           |
-| **Cache** | `KLIP_CACHE_BUCKET`  | String  | *Same as `KLIP_S3_BUCKET`* | Optional. S3 bucket name for caching transformed images. |
-| **Cache** | `KLIP_CACHE_FOLDER`  | String  | `_cache/`                  | Prefix for cached files. Stored within the cache bucket. |
+| Section   | Variable             | Type    | Default                    | Required | Description                                              |
+|-----------|----------------------|---------|----------------------------|----------|----------------------------------------------------------|
+| **LOG**   | `KLIP_LOG_LEVEL`     | Enum    | `INFO`                     | No       | `TRACE`, `INFO`, `DEBUG`, `WARN`, `ERROR`                |
+| **HTTP**  | `KLIP_HTTP_PORT`     | Int     | `8080`                     | No       | The HTTP port the server listens on.                     |
+| **AWS**   | `KLIP_AWS_REGION`    | String  | -                          | Yes      | AWS region for S3 bucket (e.g., `us-west-2`).            |
+| **AWS**   | `KLIP_S3_BUCKET`     | String  | -                          | Yes      | The S3 bucket name where source images are stored.       |
+| **Cache** | `KLIP_CACHE_ENABLED` | Boolean | True                       | No       | If false, disable image cache.                           |
+| **Cache** | `KLIP_CACHE_BUCKET`  | String  | *Same as `KLIP_S3_BUCKET`* | No       | Used if using different S3 bucket for caching.           |
+| **Cache** | `KLIP_CACHE_FOLDER`  | String  | `_cache/`                  | No       | Prefix for cached files. Stored within the cache bucket. |
 
 ---
 
 ## Run Klip Server
 
 ```bash
+KLIP_LOG_LEVEL=INFO \
 KLIP_HTTP_PORT=8080 \
 KLIP_AWS_REGION=us-west-2 \
 KLIP_S3_BUCKET=cdn.klip.com \
@@ -61,8 +62,6 @@ GET http://localhost:8080/img/pokemon/1/primary.png
 
 ---
 
-
-
 ## Resize Image
 
 ```
@@ -71,24 +70,22 @@ GET /img/{width}x{height}/{path/to/image}
 
 Resize the image to the specified width and height.
 
-Query Parameters:  
+Query Parameters:
 
-| Parameter | Type   | Required | Default | Description                   |
-|-----------|--------|----------|---------|-------------------------------|
-| `width`   | Int    | Yes      | -       | Width of the output image     |
-| `height`  | Int    | Yes      | -       | Height of the output image    |
+| Parameter | Type | Required | Default | Description                |
+|-----------|------|----------|---------|----------------------------|
+| `width`   | Int  | Yes      | -       | Width of the output image  |
+| `height`  | Int  | Yes      | -       | Height of the output image |
 
 Example:
 
 ```bash
 GET http://localhost:8080/img/250x250/pokemon/1/primary.png
 ```
-  
+
 ![Resized Image](https://github.com/kennycason/klip/blob/main/images/resized.png?raw=true)
 
 ---
-
-
 
 ## Quality Adjustment
 
@@ -96,7 +93,7 @@ GET http://localhost:8080/img/250x250/pokemon/1/primary.png
 GET /img/{width}x{height}/{path/to/image}?quality=75
 ```
 
-Adjust the image quality for compression and size optimization. 
+Adjust the image quality for compression and size optimization.
 Useful for reducing image size without significant loss of visual fidelity.
 
 Query Parameters:
@@ -104,7 +101,6 @@ Query Parameters:
 | Parameter | Type | Required | Default | Description                                                                  |
 |-----------|------|----------|---------|------------------------------------------------------------------------------|
 | `quality` | Int  | No       | 100     | Adjusts image quality (1–100). Lower values reduce size but may lose detail. |
-
 
 Supported Formats: JPEG, PNG, WebP (other formats may default to lossless encoding).
 
@@ -137,8 +133,6 @@ GET http://localhost:8080/img/1301x781/properties/102/05013ad4469e00a7aed9596bc3
 
 ---
 
-
-
 ## Center Crop
 
 ```
@@ -147,7 +141,7 @@ GET /img/{width}x{height}/{path/to/image}?crop
 
 Crop the image from the center to the specified width and height.
 
-Query Parameters:  
+Query Parameters:
 
 | Parameter | Type    | Required | Default | Description                      |
 |-----------|---------|----------|---------|----------------------------------|
@@ -158,13 +152,10 @@ Example:
 ```bash
 GET http://localhost:8080/img/250x250/pokemon/1/primary.png?crop
 ```
- 
+
 ![Cropped Image](https://github.com/kennycason/klip/blob/main/images/cropped.png?raw=true)
 
 ---
-
-
-
 
 ## Grayscale Filter
 
@@ -190,9 +181,6 @@ GET http://localhost:8080/img/250x250/pokemon/1/primary.png?grayscale
 
 ---
 
-
-
-
 ## Flip Horizontally
 
 ```
@@ -203,9 +191,9 @@ Flip the image horizontally (left-to-right).
 
 Query Parameters:
 
-| Parameter | Type    | Required | Default | Description                                      |
-|-----------|---------|----------|---------|--------------------------------------------------|
-| `flipH`   | Boolean | No       | false   | Flips the image horizontally (left-to-right).    |
+| Parameter | Type    | Required | Default | Description                                   |
+|-----------|---------|----------|---------|-----------------------------------------------|
+| `flipH`   | Boolean | No       | false   | Flips the image horizontally (left-to-right). |
 
 Example:
 
@@ -216,8 +204,6 @@ GET http://localhost:8080/img/250x250/pokemon/1/primary.png?flipH
 ![Flipped Horizontally](https://github.com/kennycason/klip/blob/main/images/resized_fliph.png?raw=true)
 
 ---
-
-
 
 ## Flip Vertically
 
@@ -251,9 +237,6 @@ GET http://localhost:8080/img/250x250/pokemon/1/primary.png?flipH&flipV
 
 ---
 
-
-
-
 ## Rotate Image
 
 ```
@@ -262,11 +245,11 @@ GET /img/{width}x{height}/{path/to/image}?rotate=45
 
 Rotate the image by the specified degrees (clockwise).
 
-Query Parameters:  
+Query Parameters:
 
-| Parameter | Type   | Required | Default | Description                                    |
-|-----------|--------|----------|---------|------------------------------------------------|
-| `rotate`  | Float  | No       | 0       | Rotates the image by the specified angle.      |
+| Parameter | Type  | Required | Default | Description                               |
+|-----------|-------|----------|---------|-------------------------------------------|
+| `rotate`  | Float | No       | 0       | Rotates the image by the specified angle. |
 
 Example - Rotate image 45 degrees:
 
@@ -283,7 +266,7 @@ GET http://localhost:8080/img/250x250/pokemon/1/primary.png?rotate=45
 ```
 GET /img/{width}x{height}/{path/to/image}?grayscale&crop&rotate=90
 ```
- 
+
 Apply multiple transformations in a single request.
 
 Example:
@@ -291,7 +274,7 @@ Example:
 ```bash
 GET http://localhost:8080/img/250x250/pokemon/1/primary.png?grayscale&crop&rotate=90
 ```
-  
+
 ![Combined Filters](https://github.com/kennycason/klip/blob/main/images/combined_transforms.png?raw=true)
 
 ---
@@ -307,8 +290,8 @@ Check if the server is up and running.
 Response:
 
 ```json
-{ 
-     "status": "UP"
+{
+  "status": "UP"
 }
 ```
 
@@ -319,7 +302,7 @@ Response:
 ```
 GET /version
 ```
- 
+
 Get the current version of the Klip server.
 
 Response:
@@ -330,6 +313,19 @@ Response:
 
 ---
 
+## Installation
+
+### Prerequisites
+
+- Java 21+
+- Gradle
+- GraphicsMagick
+
+```shell
+brew install graphicsmagick
+```
+
+---
 
 # Docker
 
@@ -379,7 +375,7 @@ aws logs tail /ecs/klip-prod --follow
 
 ALB, ECS, Fargate, ECR
 
-Note that you'll likely need to adjust this terraform to fit your project. 
+Note that you'll likely need to adjust this terraform to fit your project.
 This is meant as a starting point.
 
 ## Setup

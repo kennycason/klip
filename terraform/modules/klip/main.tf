@@ -222,6 +222,7 @@ resource "aws_ecs_task_definition" "klip_task" {
       }
 
       environment = [
+        { name = "KLIP_LOG_LEVEL", value = var.klip_log_level },
         { name = "KLIP_HTTP_PORT", value = var.klip_port },
         { name = "KLIP_AWS_REGION", value = var.region },
         { name = "KLIP_S3_BUCKET", value = var.klip_s3_bucket },

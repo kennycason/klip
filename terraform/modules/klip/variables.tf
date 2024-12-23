@@ -16,6 +16,11 @@ variable "region" {
   type = string
 }
 
+variable "klip_log_level" {
+  type    = string
+  default = "INFO"
+}
+
 variable "klip_port" {
   type    = string
   default = "8080"
