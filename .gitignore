@@ -67,4 +67,18 @@ dist/
 .kotlin/metadata/kotlinTransformedMetadataLibraries/
 
 # Docker
+# Dockerfile generated from template
 Dockerfile
+
+# Terraform
+terraform/stacks/prod/
+
+# Security
+# AWS CLI credentials (in case you generate IAM profiles locally)
+.aws/
+# Any local environment variable files with secrets
+.env
+ # Private keys
+*.key
+# Certificates
+*.pem

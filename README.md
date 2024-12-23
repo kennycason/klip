@@ -181,7 +181,7 @@ Query Parameters:
 |-----------|---------|----------|---------|-----------------------------------------------|
 | `flipV`   | Boolean | No       | false   | Flips the image vertically (top-to-bottom).    |
 
-Example:
+Example - Flip vertically:
 
 ```bash
 GET http://localhost:8080/img/250x250/properties/1/04c08449e1261fedc2eb1a6a99245531.png?flipV=true
@@ -189,27 +189,16 @@ GET http://localhost:8080/img/250x250/properties/1/04c08449e1261fedc2eb1a6a99245
 
 ![Flipped Vertically](https://github.com/kennycason/klip/blob/main/images/resized_flipv.png?raw=true)
 
----
-
-
-
-## Combine Flips
-
-```
-GET /img/{width}x{height}/{path/to/image}?flipH=true&flipV=true
-```
-
-Flip the image both horizontally and vertically.
-
 Example - Flip both horizontally and vertically:
 
 ```bash
 GET http://localhost:8080/img/250x250/properties/1/04c08449e1261fedc2eb1a6a99245531.png?flipH=true&flipV=true
 ```
 
-![Flipped Both](https://github.com/kennycason/klip/blob/main/images/flippedHV.png?raw=true)
+![Flipped Both](https://github.com/kennycason/klip/blob/main/images/resized_fliph_flipv.png?raw=true)
 
 ---
+
 
 
 
@@ -309,5 +298,49 @@ Afterward set the `ENV` variables as needed.
 ## Build Docker image
 
 ```shell
-docker build -t klip:latest .
+docker build -t klip-prod:latest .
+```
+
+## Tag and Deploy image
+
+```shell
+docker tag klip-prod:latest <AWS_ACCOUNT_ID>.dkr.ecr.<AWS_REGION>.amazonaws.com/klip-prod:latest
+docker push <AWS_ACCOUNT_ID>.dkr.ecr.<AWS_REGION>.amazonaws.com/klip-prod:latest
+```
+
+## Force deploy of Klip
+
+```shell
+aws ecs update-service \
+  --cluster klip-prod-cluster \
+  --service klip-prod-service \
+  --force-new-deployment
+```
+
+## Tail Logs
+
+```shell
+aws logs tail /ecs/klip-prod --follow
+```
+
+# Terraform
+
+ALB, ECS, Fargate, ECR
+
+Note that you'll likely need to adjust this terraform to fit your project. 
+This is meant as a starting point.
+
+## Setup
+
+```shell
+cd terraform/stacks/
+cp prod-template prod
+```
+
+Make whatever edits you need to the terraform/variables.
+
+```shell
+cd terraform/stacks/prod/
+terraform init
+terraform apply
 ```
