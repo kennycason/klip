@@ -122,12 +122,19 @@ GET http://localhost:8080/img/1301x781/properties/102/05013ad4469e00a7aed9596bc3
 GET http://localhost:8080/img/1301x781/properties/102/05013ad4469e00a7aed9596bc37af74e.jpg?quality=10
 ```
 
-### Image Comparison
+### Image Comparison (click to enlarge)
 
-| High (100) (default)                                                           | Medium-High (75)                                                             | Medium (50)                                                                  | Low (25)                                                                     | Lower (10)                                                                   |
-|--------------------------------------------------------------------------------|------------------------------------------------------------------------------|------------------------------------------------------------------------------|------------------------------------------------------------------------------|------------------------------------------------------------------------------|
-| ![100%](https://github.com/kennycason/klip/blob/main/images/q100.jpg?raw=true) | ![75%](https://github.com/kennycason/klip/blob/main/images/q75.jpg?raw=true) | ![75%](https://github.com/kennycason/klip/blob/main/images/q50.jpg?raw=true) | ![25%](https://github.com/kennycason/klip/blob/main/images/q25.jpg?raw=true) | ![25%](https://github.com/kennycason/klip/blob/main/images/q10.jpg?raw=true) |
-| 991,091 bytes                                                                  | 205,236 bytes                                                                | 132,963 bytes                                                                | 83,156 bytes                                                                 | 43,615 bytes                                                                 |
+
+| High (100) (default)                                                           | Medium-High (75)                                                             | Medium (50)                                                                  |
+|--------------------------------------------------------------------------------|------------------------------------------------------------------------------|------------------------------------------------------------------------------|
+| ![100%](https://github.com/kennycason/klip/blob/main/images/q100.jpg?raw=true) | ![75%](https://github.com/kennycason/klip/blob/main/images/q75.jpg?raw=true) | ![75%](https://github.com/kennycason/klip/blob/main/images/q50.jpg?raw=true) |
+| 991,091 bytes                                                                  | 205,236 bytes                                                                | 132,963 bytes                                                                |
+
+
+| Low (25)                                                                     | Lower (10)                                                                   |
+|------------------------------------------------------------------------------|------------------------------------------------------------------------------|
+| ![25%](https://github.com/kennycason/klip/blob/main/images/q25.jpg?raw=true) | ![25%](https://github.com/kennycason/klip/blob/main/images/q10.jpg?raw=true) |
+| 83,156 bytes                                                                 | 43,615 bytes                                                                 |
 
 ---
 
