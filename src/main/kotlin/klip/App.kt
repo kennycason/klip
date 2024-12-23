@@ -90,7 +90,6 @@ object Routes {
             if (System.getenv("AWS_PROFILE") == "default") { // for running local
                 credentialsProvider = ProfileCredentialsProvider(profileName = "default")
             }
-
         }
 
         routing {
@@ -117,18 +116,22 @@ object Routes {
     }
 
     private suspend fun ApplicationCall.handleImageRequest(s3Client: S3Client, env: Env) {
+        // extract size and path
         val size = parameters["size"] ?: ""
         val match = Regex("(\\d+)x(\\d+)").matchEntire(size)
-
         val width = match?.groups?.get(1)?.value?.toIntOrNull()
         val height = match?.groups?.get(2)?.value?.toIntOrNull()
+
         val path = parameters.getAll("path")?.joinToString("/") ?: ""
 
-        val grayscale = request.queryParameters["grayscale"]?.toBoolean() ?: false
-        val crop = request.queryParameters["crop"]?.toBoolean() ?: false
+        // handle boolean values
+        val grayscale = isParamTrue(request.queryParameters["grayscale"])
+        val crop = isParamTrue(request.queryParameters["crop"])
+        val flipH = isParamTrue(request.queryParameters["flipH"])
+        val flipV = isParamTrue(request.queryParameters["flipV"])
+
+        // handle float and int values
         val rotate = request.queryParameters["rotate"]?.toFloatOrNull()
-        val flipH = request.queryParameters["flipH"]?.toBoolean() ?: false
-        val flipV = request.queryParameters["flipV"]?.toBoolean() ?: false
         val quality = request.queryParameters["quality"]?.toIntOrNull()
 
         if (width == null || height == null) {
@@ -199,6 +202,9 @@ object Routes {
             respond(HttpStatusCode.NotFound, "File not found: $path")
         }
     }
+
+    private val TRUE_VALUES = setOf("1", "")
+    private fun isParamTrue(value: String?): Boolean = value in TRUE_VALUES
 }
 
 object S3 {

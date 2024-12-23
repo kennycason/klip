@@ -37,9 +37,7 @@ KLIP_CACHE_FOLDER=.cache/ \
 java -jar build/libs/klip-all.jar
 ```
 
-Default local endpoint
-
-- `http://0.0.0.0:8080`
+Default local endpoint: `http://0.0.0.0:8080`
 
 ---
 
@@ -144,7 +142,7 @@ GET http://localhost:8080/img/1301x781/properties/102/05013ad4469e00a7aed9596bc3
 ## Center Crop
 
 ```
-GET /img/{width}x{height}/{path/to/image}?crop=true
+GET /img/{width}x{height}/{path/to/image}?crop
 ```
 
 Crop the image from the center to the specified width and height.
@@ -158,7 +156,7 @@ Query Parameters:
 Example:
 
 ```bash
-GET http://localhost:8080/img/250x250/pokemon/1/primary.png?crop=true
+GET http://localhost:8080/img/250x250/pokemon/1/primary.png?crop
 ```
  
 ![Cropped Image](https://github.com/kennycason/klip/blob/main/images/cropped.png?raw=true)
@@ -171,7 +169,7 @@ GET http://localhost:8080/img/250x250/pokemon/1/primary.png?crop=true
 ## Grayscale Filter
 
 ```
-GET /img/{width}x{height}/{path/to/image}?grayscale=true
+GET /img/{width}x{height}/{path/to/image}?grayscale
 ```
 
 Convert the image to grayscale while resizing to the specified dimensions.
@@ -185,7 +183,7 @@ Query Parameters:
 Example:
 
 ```bash
-GET http://localhost:8080/img/250x250/pokemon/1/primary.png?grayscale=true
+GET http://localhost:8080/img/250x250/pokemon/1/primary.png?grayscale
 ```
 
 ![Grayscale Image](https://github.com/kennycason/klip/blob/main/images/resized_grayscale.png?raw=true)
@@ -198,7 +196,7 @@ GET http://localhost:8080/img/250x250/pokemon/1/primary.png?grayscale=true
 ## Flip Horizontally
 
 ```
-GET /img/{width}x{height}/{path/to/image}?flipH=true
+GET /img/{width}x{height}/{path/to/image}?flipH
 ```
 
 Flip the image horizontally (left-to-right).
@@ -212,7 +210,7 @@ Query Parameters:
 Example:
 
 ```bash
-GET http://localhost:8080/img/250x250/pokemon/1/primary.png?flipH=true
+GET http://localhost:8080/img/250x250/pokemon/1/primary.png?flipH
 ```
 
 ![Flipped Horizontally](https://github.com/kennycason/klip/blob/main/images/resized_fliph.png?raw=true)
@@ -224,7 +222,7 @@ GET http://localhost:8080/img/250x250/pokemon/1/primary.png?flipH=true
 ## Flip Vertically
 
 ```
-GET /img/{width}x{height}/{path/to/image}?flipV=true
+GET /img/{width}x{height}/{path/to/image}?flipV
 ```
 
 Flip the image vertically (top-to-bottom).
@@ -238,7 +236,7 @@ Query Parameters:
 Example - Flip vertically:
 
 ```bash
-GET http://localhost:8080/img/250x250/pokemon/1/primary.png?flipV=true
+GET http://localhost:8080/img/250x250/pokemon/1/primary.png?flipV
 ```
 
 ![Flipped Vertically](https://github.com/kennycason/klip/blob/main/images/resized_flipv.png?raw=true)
@@ -246,7 +244,7 @@ GET http://localhost:8080/img/250x250/pokemon/1/primary.png?flipV=true
 Example - Flip both horizontally and vertically:
 
 ```bash
-GET http://localhost:8080/img/250x250/pokemon/1/primary.png?flipH=true&flipV=true
+GET http://localhost:8080/img/250x250/pokemon/1/primary.png?flipH&flipV
 ```
 
 ![Flipped Both](https://github.com/kennycason/klip/blob/main/images/resized_fliph_flipv.png?raw=true)
@@ -283,7 +281,7 @@ GET http://localhost:8080/img/250x250/pokemon/1/primary.png?rotate=45
 ## Combine Filters
 
 ```
-GET /img/{width}x{height}/{path/to/image}?grayscale=true&crop=true&rotate=90
+GET /img/{width}x{height}/{path/to/image}?grayscale&crop&rotate=90
 ```
  
 Apply multiple transformations in a single request.
@@ -291,7 +289,7 @@ Apply multiple transformations in a single request.
 Example:
 
 ```bash
-GET http://localhost:8080/img/250x250/pokemon/1/primary.png?grayscale=true&crop=true&rotate=90
+GET http://localhost:8080/img/250x250/pokemon/1/primary.png?grayscale&crop&rotate=90
 ```
   
 ![Combined Filters](https://github.com/kennycason/klip/blob/main/images/combined_transforms.png?raw=true)
