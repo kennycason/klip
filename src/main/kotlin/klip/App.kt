@@ -17,10 +17,10 @@ import io.ktor.server.routing.*
 import klip.Routes.setup
 import klip.S3.checkCache
 import klip.S3.generateCacheKey
+import klip.S3.writeToCache
 import klip.image.toByteArray
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
-import org.apache.logging.log4j.Logger
 import org.apache.logging.log4j.kotlin.logger
 import java.awt.Image
 import java.awt.image.BufferedImage
@@ -48,6 +48,7 @@ data class Env(
     )
 
     data class Cache(
+        val enabled: Boolean = System.getenv("KLIP_CACHE_ENABLED")?.toBoolean() ?: true,
         // optional, defaults to source bucket
         val cacheBucket: String = System.getenv("KLIP_CACHE_BUCKET").ifBlank { System.getenv("KLIP_S3_BUCKET") },
         // prefix for cached files
@@ -64,6 +65,8 @@ data class KlipImage(
 )
 
 fun main() {
+    logger.info { "Starting Klip" }
+
     val env = Env()
     logger.info(env)
 
@@ -143,12 +146,14 @@ object Routes {
         logger.info("Cache Key: $cacheKey")
 
         // check cache
-        val cachedImage = checkCache(s3Client, env, cacheKey)
-        if (cachedImage != null) {
-            logger.info("Cache hit: $cacheKey")
-            response.headers.append("Content-Type", cachedImage.contentType.toString())
-            respondBytes(cachedImage.data)
-            return
+        if (env.cache.enabled) {
+            val cachedImage = checkCache(s3Client, env, cacheKey)
+            if (cachedImage != null) {
+                logger.info("Cache hit: $cacheKey")
+                response.headers.append("Content-Type", cachedImage.contentType.toString())
+                respondBytes(cachedImage.data)
+                return
+            }
         }
 
         val s3Image = S3.readFile(s3Client, env.aws.s3Bucket, path)
@@ -169,7 +174,9 @@ object Routes {
                 quality = quality
             )
 
-            // writeToCache(s3Client, env, cacheKey, processedImage)
+            if (env.cache.enabled) {
+                writeToCache(s3Client, env, cacheKey, processedImage)
+            }
 
             response.headers.append("Content-Type", s3Image.contentType.toString())
             respondBytes(processedImage)
@@ -387,13 +394,14 @@ object ImageProcessor {
                 writer.dispose()
             }
             "png" -> {
-                // PNG is always lossless, but we can control deflate level
+                // PNG uses lossless compression, so we set the deflate level instead.
                 val writer = ImageIO.getImageWritersByFormatName(format).next()
                 val param = writer.defaultWriteParam.apply {
                     compressionMode = ImageWriteParam.MODE_EXPLICIT
                     compressionType = "Deflate"
-                    // For PNG, we invert the quality - lower quality = higher compression
-                    compressionQuality = 1.0f - adjustedQuality
+                    // Map quality [1-100] to deflate level [0-9] (max compression)
+                    val deflateLevel = (9 * (1 - adjustedQuality)).toInt().coerceIn(0, 9)
+                    setCompressionQuality(deflateLevel / 9.0f)
                 }
 
                 ImageIO.createImageOutputStream(outputStream).use { output ->

@@ -13,13 +13,14 @@ It supports caching, resizing, cropping, grayscale filters, and rotation via HTT
 
 ##  Environment Configuration (Env)
 
-| Section | Variable                | Type   | Default       | Description                                                             |
-|---------|-------------------------|--------|---------------|-------------------------------------------------------------------------|
-| **HTTP**| `KLIP_HTTP_PORT`        | Int    | `8080`        | The HTTP port the server listens on.                                    |
-| **AWS** | `KLIP_AWS_REGION`       | String | -             | AWS region for S3 bucket (e.g., `us-west-2`).                           |
-| **AWS** | `KLIP_S3_BUCKET`        | String | -             | The S3 bucket name where source images are stored.                      |
-| **Cache**| `KLIP_CACHE_BUCKET`    | String | *Same as `KLIP_S3_BUCKET`*  | Optional. S3 bucket name for caching transformed images.                |
-| **Cache**| `KLIP_CACHE_FOLDER`    | String | `_cache/`     | Prefix for cached files. Stored within the cache bucket.                |
+| Section   | Variable             | Type    | Default                    | Description                                              |
+|-----------|----------------------|---------|----------------------------|----------------------------------------------------------|
+| **HTTP**  | `KLIP_HTTP_PORT`     | Int     | `8080`                     | The HTTP port the server listens on.                     |
+| **AWS**   | `KLIP_AWS_REGION`    | String  | -                          | AWS region for S3 bucket (e.g., `us-west-2`).            |
+| **AWS**   | `KLIP_S3_BUCKET`     | String  | -                          | The S3 bucket name where source images are stored.       |
+| **Cache** | `KLIP_CACHE_ENABLED` | Boolean | True                       | If false, disable image cache.                           |
+| **Cache** | `KLIP_CACHE_BUCKET`  | String  | *Same as `KLIP_S3_BUCKET`* | Optional. S3 bucket name for caching transformed images. |
+| **Cache** | `KLIP_CACHE_FOLDER`  | String  | `_cache/`                  | Prefix for cached files. Stored within the cache bucket. |
 
 ---
 
@@ -29,6 +30,7 @@ It supports caching, resizing, cropping, grayscale filters, and rotation via HTT
 KLIP_HTTP_PORT=8080 \
 KLIP_AWS_REGION=us-west-2 \
 KLIP_S3_BUCKET=cdn.klip.com \
+KLIP_CACHE_ENABLED=true \
 KLIP_CACHE_BUCKET=cdn.klip.com \
 KLIP_CACHE_FOLDER=.cache/ \
 java -jar build/libs/klip-all.jar
@@ -100,9 +102,9 @@ Useful for reducing image size without significant loss of visual fidelity.
 
 Query Parameters:
 
-| Parameter  | Type   | Required | Default | Description                                                                 |
-|------------|--------|----------|---------|-----------------------------------------------------------------------------|
-| `quality`  | Int    | No       | 100     | Adjusts image quality (1–100). Lower values reduce size but may lose detail.|
+| Parameter | Type | Required | Default | Description                                                                  |
+|-----------|------|----------|---------|------------------------------------------------------------------------------|
+| `quality` | Int  | No       | 100     | Adjusts image quality (1–100). Lower values reduce size but may lose detail. |
 
 
 Supported Formats: JPEG, PNG, WebP (other formats may default to lossless encoding).
@@ -124,12 +126,10 @@ GET http://localhost:8080/img/1301x781/properties/102/05013ad4469e00a7aed9596bc3
 
 ### Image Comparison (click to enlarge)
 
-
 | High (100) (default)                                                           | Medium-High (75)                                                             | Medium (50)                                                                  |
 |--------------------------------------------------------------------------------|------------------------------------------------------------------------------|------------------------------------------------------------------------------|
 | ![100%](https://github.com/kennycason/klip/blob/main/images/q100.jpg?raw=true) | ![75%](https://github.com/kennycason/klip/blob/main/images/q75.jpg?raw=true) | ![75%](https://github.com/kennycason/klip/blob/main/images/q50.jpg?raw=true) |
 | 991,091 bytes                                                                  | 205,236 bytes                                                                | 132,963 bytes                                                                |
-
 
 | Low (25)                                                                     | Lower (10)                                                                   |
 |------------------------------------------------------------------------------|------------------------------------------------------------------------------|
@@ -177,9 +177,9 @@ Convert the image to grayscale while resizing to the specified dimensions.
 
 Query Parameters:
 
-| Parameter   | Type    | Required | Default | Description                                  |
-|-------------|---------|----------|---------|----------------------------------------------|
-| `grayscale` | Boolean | No       | false   | Applies a grayscale filter to the image.     |
+| Parameter   | Type    | Required | Default | Description                              |
+|-------------|---------|----------|---------|------------------------------------------|
+| `grayscale` | Boolean | No       | false   | Applies a grayscale filter to the image. |
 
 Example:
 
@@ -230,9 +230,9 @@ Flip the image vertically (top-to-bottom).
 
 Query Parameters:
 
-| Parameter | Type    | Required | Default | Description                                   |
-|-----------|---------|----------|---------|-----------------------------------------------|
-| `flipV`   | Boolean | No       | false   | Flips the image vertically (top-to-bottom).    |
+| Parameter | Type    | Required | Default | Description                                 |
+|-----------|---------|----------|---------|---------------------------------------------|
+| `flipV`   | Boolean | No       | false   | Flips the image vertically (top-to-bottom). |
 
 Example - Flip vertically:
 

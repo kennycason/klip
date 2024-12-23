@@ -20,20 +20,20 @@ resource "aws_iam_policy" "ecs_s3_custom_policy" {
 
   # TODO remove "s3:PutObject" if not needed (ie only add to cache bucket)
   policy = jsonencode({
-    Version = "2012-10-17", Statement = concat(
+    Version = "2012-10-17",
+    Statement = concat(
       [
         {
-          Effect = "Allow", Action = [
-          "s3:GetObject", "s3:ListBucket", "s3:PutObject"
-        ], Resource = [
-          "arn:aws:s3:::${var.klip_s3_bucket}", "arn:aws:s3:::${var.klip_s3_bucket}/*"
-        ]
+          Effect = "Allow",
+          Action = ["s3:GetObject", "s3:ListBucket", "s3:PutObject"],
+          Resource = ["arn:aws:s3:::${var.klip_s3_bucket}", "arn:aws:s3:::${var.klip_s3_bucket}/*"]
         }
-      ], var.klip_s3_cache_bucket != var.klip_s3_bucket ? [
+      ],
+      var.klip_s3_cache_bucket != var.klip_s3_bucket ? [
         {
-          Effect = "Allow", Action = ["s3:GetObject", "s3:ListBucket", "s3:PutObject"], Resource = [
-          "arn:aws:s3:::${var.klip_s3_cache_bucket}", "arn:aws:s3:::${var.klip_s3_cache_bucket}/*"
-        ]
+          Effect = "Allow",
+          Action = ["s3:GetObject", "s3:ListBucket", "s3:PutObject"],
+          Resource = ["arn:aws:s3:::${var.klip_s3_cache_bucket}", "arn:aws:s3:::${var.klip_s3_cache_bucket}/*"]
         }
       ] : []
     )
@@ -113,10 +113,26 @@ resource "aws_security_group" "alb_sg" {
 }
 
 # ALB Security Group Rules
-resource "aws_security_group_rule" "alb_ingress" {
+
+# Allow HTTP (port 80)
+resource "aws_security_group_rule" "alb_ingress_http" {
   type              = "ingress"
   from_port         = 80
   to_port           = 80
+  protocol          = "tcp"
+  cidr_blocks       = ["0.0.0.0/0"]
+  security_group_id = aws_security_group.alb_sg.id
+
+  lifecycle {
+    ignore_changes = all
+  }
+}
+
+# Allow HTTPS (port 443)
+resource "aws_security_group_rule" "alb_ingress_https" {
+  type              = "ingress"
+  from_port         = 443
+  to_port           = 443
   protocol          = "tcp"
   cidr_blocks       = ["0.0.0.0/0"]
   security_group_id = aws_security_group.alb_sg.id
@@ -209,6 +225,7 @@ resource "aws_ecs_task_definition" "klip_task" {
         { name = "KLIP_HTTP_PORT", value = var.klip_port },
         { name = "KLIP_AWS_REGION", value = var.region },
         { name = "KLIP_S3_BUCKET", value = var.klip_s3_bucket },
+        { name = "KLIP_CACHE_ENABLED", value = var.klip_s3_cache_enabled },
         { name = "KLIP_CACHE_BUCKET", value = var.klip_s3_cache_bucket },
         { name = "KLIP_CACHE_FOLDER", value = var.klip_s3_cache_folder },
       ]
@@ -271,9 +288,11 @@ resource "aws_ecs_service" "klip_service" {
 
   depends_on = [
     aws_lb_listener.http_listener,
+    aws_lb_listener.https_listener,
     aws_security_group.alb_sg,
     aws_security_group.ecs_tasks_sg,
-    aws_security_group_rule.alb_ingress,
+    aws_security_group_rule.alb_ingress_http,
+    aws_security_group_rule.alb_ingress_https,
     aws_security_group_rule.alb_egress,
     aws_security_group_rule.ecs_ingress,
     aws_security_group_rule.ecs_egress
@@ -313,7 +332,8 @@ resource "aws_lb_target_group" "klip_tg" {
 
   health_check {
     path                = "/health"
-    port                = "8080"
+    port                = "traffic-port"
+    protocol            = "HTTPS"
     interval            = 30
     timeout             = 5
     healthy_threshold   = 3
@@ -330,15 +350,30 @@ resource "aws_lb_listener" "http_listener" {
   port              = 80
   protocol          = "HTTP"
 
-  lifecycle {
-    create_before_destroy = true
+  default_action {
+    type = "redirect"
+
+    redirect {
+      protocol    = "HTTPS"
+      port        = "443"
+      status_code = "HTTP_301"
+    }
   }
+}
+
+resource "aws_lb_listener" "https_listener" {
+  load_balancer_arn = aws_lb.klip_lb.arn
+  port              = 443
+  protocol          = "HTTPS"
+  ssl_policy        = "ELBSecurityPolicy-TLS-1-2-2017-01"
+  certificate_arn   = aws_acm_certificate.klip_cert.arn
 
   default_action {
     type             = "forward"
     target_group_arn = aws_lb_target_group.klip_tg.arn
   }
 }
+
 
 # Route 53 Record
 resource "aws_route53_record" "klip_dns" {
@@ -351,4 +386,36 @@ resource "aws_route53_record" "klip_dns" {
     zone_id                = aws_lb.klip_lb.zone_id
     evaluate_target_health = true
   }
+}
+
+resource "aws_acm_certificate" "klip_cert" {
+  domain_name       = var.route53_domain
+  validation_method = "DNS"
+
+  lifecycle {
+    create_before_destroy = true
+  }
+
+  tags = var.tags
+}
+
+resource "aws_acm_certificate_validation" "klip_cert_validation" {
+  certificate_arn         = aws_acm_certificate.klip_cert.arn
+  validation_record_fqdns = [for record in aws_route53_record.klip_cert_validation : record.fqdn]
+}
+
+resource "aws_route53_record" "klip_cert_validation" {
+  for_each = {
+    for dvo in aws_acm_certificate.klip_cert.domain_validation_options : dvo.domain_name => {
+      name   = dvo.resource_record_name
+      type   = dvo.resource_record_type
+      value  = dvo.resource_record_value
+    }
+  }
+
+  name    = each.value.name
+  type    = each.value.type
+  zone_id = var.route53_zone_id
+  records = [each.value.value]
+  ttl     = 300
 }
