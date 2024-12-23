@@ -18,7 +18,8 @@ class CacheKeyTest {
             crop = true,
             flipH = false,
             flipV = false,
-            rotate = 90f
+            rotate = 90f,
+            quality = null
         )).isEqualTo("properties/1/0-100x100g1c1r90.png")
 
         // some parameters omitted
@@ -30,7 +31,8 @@ class CacheKeyTest {
             crop = false,
             flipH = false,
             flipV = false,
-            rotate = null
+            rotate = null,
+            quality = null
         )).isEqualTo("properties/1/0-200x300g1.jpeg")
 
         // flipH +flipV
@@ -42,8 +44,22 @@ class CacheKeyTest {
             crop = false,
             flipH = true,
             flipV = true,
-            rotate = null
+            rotate = null,
+            quality = null
         )).isEqualTo("properties/1/0-200x300h1v1.jpeg")
+
+        // quality
+        expectThat(generateCacheKey(
+            "properties/1/0.bmp",
+            width = 50,
+            height = 50,
+            grayscale = false,
+            crop = false,
+            flipH = false,
+            flipV = false,
+            rotate = null,
+            quality = 64
+        )).isEqualTo("properties/1/0-50x50q64.bmp")
 
         // no transformations
         expectThat(generateCacheKey(
@@ -54,7 +70,8 @@ class CacheKeyTest {
             crop = false,
             flipH = false,
             flipV = false,
-            rotate = null
+            rotate = null,
+            quality = null
         )).isEqualTo("properties/1/0-50x50.bmp")
     }
 }

@@ -53,7 +53,7 @@ Fetch the original image stored in the S3 bucket without any transformations.
 Example:
 
 ```bash
-GET http://localhost:8080/img/properties/1/04c08449e1261fedc2eb1a6a99245531.png
+GET http://localhost:8080/img/pokemon/1/primary.png
 ```
 
 <img src="https://github.com/kennycason/klip/blob/main/images/original.png?raw=true" width="500px"/>
@@ -80,7 +80,7 @@ Query Parameters:
 Example:
 
 ```bash
-GET http://localhost:8080/img/250x250/properties/1/04c08449e1261fedc2eb1a6a99245531.png
+GET http://localhost:8080/img/250x250/pokemon/1/primary.png
 ```
   
 ![Resized Image](https://github.com/kennycason/klip/blob/main/images/resized.png?raw=true)
@@ -89,27 +89,45 @@ GET http://localhost:8080/img/250x250/properties/1/04c08449e1261fedc2eb1a6a99245
 
 
 
-## Grayscale Filter
+## Quality Adjustment
 
 ```
-GET /img/{width}x{height}/{path/to/image}?grayscale=true
+GET /img/{width}x{height}/{path/to/image}?quality=75
 ```
 
-Convert the image to grayscale while resizing to the specified dimensions.
+Adjust the image quality for compression and size optimization. 
+Useful for reducing image size without significant loss of visual fidelity.
 
-Query Parameters:  
+Query Parameters:
 
-| Parameter   | Type    | Required | Default | Description                                  |
-|-------------|---------|----------|---------|----------------------------------------------|
-| `grayscale` | Boolean | No       | false   | Applies a grayscale filter to the image.     |
+| Parameter  | Type   | Required | Default | Description                                                                 |
+|------------|--------|----------|---------|-----------------------------------------------------------------------------|
+| `quality`  | Int    | No       | 100     | Adjusts image quality (1–100). Lower values reduce size but may lose detail.|
 
-Example:
+
+Supported Formats: JPEG, PNG, WebP (other formats may default to lossless encoding).
+
+Examples:
 
 ```bash
-GET http://localhost:8080/img/250x250/properties/1/04c08449e1261fedc2eb1a6a99245531.png?grayscale=true
+# High Quality (Default)
+GET http://localhost:8080/img/250x250/pokemon/1/primary.png?quality=100
+# Medium-High Quality
+GET http://localhost:8080/img/1301x781/properties/102/05013ad4469e00a7aed9596bc37af74e.jpg?quality=75
+# Medium Quality
+GET http://localhost:8080/img/1301x781/properties/102/05013ad4469e00a7aed9596bc37af74e.jpg?quality=50
+# Low Quality
+GET http://localhost:8080/img/1301x781/properties/102/05013ad4469e00a7aed9596bc37af74e.jpg?quality=25
+# Lower Quality
+GET http://localhost:8080/img/1301x781/properties/102/05013ad4469e00a7aed9596bc37af74e.jpg?quality=10
 ```
 
-![Grayscale Image](https://github.com/kennycason/klip/blob/main/images/resized_grayscale.png?raw=true)
+### Image Comparison
+
+| High (100) (default)                                                           | Medium-High (75)                                                             | Medium (50)                                                                  | Low (25)                                                                     | Lower (10)                                                                   |
+|--------------------------------------------------------------------------------|------------------------------------------------------------------------------|------------------------------------------------------------------------------|------------------------------------------------------------------------------|------------------------------------------------------------------------------|
+| ![100%](https://github.com/kennycason/klip/blob/main/images/q100.jpg?raw=true) | ![75%](https://github.com/kennycason/klip/blob/main/images/q75.jpg?raw=true) | ![75%](https://github.com/kennycason/klip/blob/main/images/q50.jpg?raw=true) | ![25%](https://github.com/kennycason/klip/blob/main/images/q25.jpg?raw=true) | ![25%](https://github.com/kennycason/klip/blob/main/images/q10.jpg?raw=true) |
+| 991,091 bytes                                                                  | 205,236 bytes                                                                | 132,963 bytes                                                                | 83,156 bytes                                                                 | 43,615 bytes                                                                 |
 
 ---
 
@@ -132,12 +150,40 @@ Query Parameters:
 Example:
 
 ```bash
-GET http://localhost:8080/img/250x250/properties/1/04c08449e1261fedc2eb1a6a99245531.png?crop=true
+GET http://localhost:8080/img/250x250/pokemon/1/primary.png?crop=true
 ```
  
 ![Cropped Image](https://github.com/kennycason/klip/blob/main/images/cropped.png?raw=true)
 
 ---
+
+
+
+
+## Grayscale Filter
+
+```
+GET /img/{width}x{height}/{path/to/image}?grayscale=true
+```
+
+Convert the image to grayscale while resizing to the specified dimensions.
+
+Query Parameters:
+
+| Parameter   | Type    | Required | Default | Description                                  |
+|-------------|---------|----------|---------|----------------------------------------------|
+| `grayscale` | Boolean | No       | false   | Applies a grayscale filter to the image.     |
+
+Example:
+
+```bash
+GET http://localhost:8080/img/250x250/pokemon/1/primary.png?grayscale=true
+```
+
+![Grayscale Image](https://github.com/kennycason/klip/blob/main/images/resized_grayscale.png?raw=true)
+
+---
+
 
 
 
@@ -158,7 +204,7 @@ Query Parameters:
 Example:
 
 ```bash
-GET http://localhost:8080/img/250x250/properties/1/04c08449e1261fedc2eb1a6a99245531.png?flipH=true
+GET http://localhost:8080/img/250x250/pokemon/1/primary.png?flipH=true
 ```
 
 ![Flipped Horizontally](https://github.com/kennycason/klip/blob/main/images/resized_fliph.png?raw=true)
@@ -184,7 +230,7 @@ Query Parameters:
 Example - Flip vertically:
 
 ```bash
-GET http://localhost:8080/img/250x250/properties/1/04c08449e1261fedc2eb1a6a99245531.png?flipV=true
+GET http://localhost:8080/img/250x250/pokemon/1/primary.png?flipV=true
 ```
 
 ![Flipped Vertically](https://github.com/kennycason/klip/blob/main/images/resized_flipv.png?raw=true)
@@ -192,7 +238,7 @@ GET http://localhost:8080/img/250x250/properties/1/04c08449e1261fedc2eb1a6a99245
 Example - Flip both horizontally and vertically:
 
 ```bash
-GET http://localhost:8080/img/250x250/properties/1/04c08449e1261fedc2eb1a6a99245531.png?flipH=true&flipV=true
+GET http://localhost:8080/img/250x250/pokemon/1/primary.png?flipH=true&flipV=true
 ```
 
 ![Flipped Both](https://github.com/kennycason/klip/blob/main/images/resized_fliph_flipv.png?raw=true)
@@ -219,7 +265,7 @@ Query Parameters:
 Example - Rotate image 45 degrees:
 
 ```bash
-GET http://localhost:8080/img/250x250/properties/1/04c08449e1261fedc2eb1a6a99245531.png?rotate=45
+GET http://localhost:8080/img/250x250/pokemon/1/primary.png?rotate=45
 ```
 
 ![Rotated Image](https://github.com/kennycason/klip/blob/main/images/resized_rotated45.png?raw=true)
@@ -237,7 +283,7 @@ Apply multiple transformations in a single request.
 Example:
 
 ```bash
-GET http://localhost:8080/img/250x250/properties/1/04c08449e1261fedc2eb1a6a99245531.png?grayscale=true&crop=true&rotate=90
+GET http://localhost:8080/img/250x250/pokemon/1/primary.png?grayscale=true&crop=true&rotate=90
 ```
   
 ![Combined Filters](https://github.com/kennycason/klip/blob/main/images/combined_transforms.png?raw=true)

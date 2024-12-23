@@ -18,6 +18,7 @@ resource "aws_ecr_repository" "klip_repo" {
 resource "aws_iam_policy" "ecs_s3_custom_policy" {
   name = "${var.service_name}-${var.stack}-ecs-s3-custom-policy"
 
+  # TODO remove "s3:PutObject" if not needed (ie only add to cache bucket)
   policy = jsonencode({
     Version = "2012-10-17", Statement = concat(
       [

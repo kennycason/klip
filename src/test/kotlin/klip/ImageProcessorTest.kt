@@ -23,7 +23,8 @@ class ImageProcessorTest {
             crop = false,
             flipH = false,
             flipV = false,
-            rotate = null
+            rotate = null,
+            quality = null,
         )
 
         val outputImage = ImageIO.read(result.inputStream())
@@ -44,7 +45,8 @@ class ImageProcessorTest {
             crop = false,
             flipH = false,
             flipV = false,
-            rotate = null
+            rotate = null,
+            quality = null,
         )
 
         val outputImage = ImageIO.read(result.inputStream())
@@ -66,7 +68,8 @@ class ImageProcessorTest {
             crop = false,
             flipH = false,
             flipV = false,
-            rotate = 90f
+            rotate = 90f,
+            quality = null,
         )
 
         val outputImage = ImageIO.read(result.inputStream())

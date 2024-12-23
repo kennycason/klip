@@ -4,7 +4,6 @@ import aws.sdk.kotlin.runtime.auth.credentials.DefaultChainCredentialsProvider
 import aws.sdk.kotlin.services.s3.S3Client
 import aws.sdk.kotlin.services.s3.model.GetObjectRequest
 import aws.sdk.kotlin.runtime.auth.credentials.ProfileCredentialsProvider
-import aws.smithy.kotlin.runtime.client.LogMode
 import aws.smithy.kotlin.runtime.content.ByteStream
 import aws.smithy.kotlin.runtime.content.toByteArray
 import io.ktor.http.*
@@ -18,15 +17,18 @@ import io.ktor.server.routing.*
 import klip.Routes.setup
 import klip.S3.checkCache
 import klip.S3.generateCacheKey
-import klip.S3.writeToCache
 import klip.image.toByteArray
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import org.apache.logging.log4j.Logger
 import org.apache.logging.log4j.kotlin.logger
 import java.awt.Image
 import java.awt.image.BufferedImage
 import java.io.ByteArrayInputStream
+import java.io.ByteArrayOutputStream
+import javax.imageio.IIOImage
 import javax.imageio.ImageIO
+import javax.imageio.ImageWriteParam
 import kotlin.math.abs
 import kotlin.math.cos
 import kotlin.math.sin
@@ -121,6 +123,7 @@ object Routes {
         val rotate = request.queryParameters["rotate"]?.toFloatOrNull()
         val flipH = request.queryParameters["flipH"]?.toBoolean() ?: false
         val flipV = request.queryParameters["flipV"]?.toBoolean() ?: false
+        val quality = request.queryParameters["quality"]?.toIntOrNull()
 
         if (width == null || height == null) {
             respond(HttpStatusCode.BadRequest, "Invalid width or height")
@@ -134,7 +137,8 @@ object Routes {
                 crop = crop,
                 flipH = flipH,
                 flipV = flipV,
-                rotate = rotate
+                rotate = rotate,
+                quality = quality
             )
         logger.info("Cache Key: $cacheKey")
 
@@ -161,10 +165,11 @@ object Routes {
                 crop = crop,
                 flipH = flipH,
                 flipV = flipV,
-                rotate = rotate
+                rotate = rotate,
+                quality = quality
             )
 
-            writeToCache(s3Client, env, cacheKey, processedImage)
+            // writeToCache(s3Client, env, cacheKey, processedImage)
 
             response.headers.append("Content-Type", s3Image.contentType.toString())
             respondBytes(processedImage)
@@ -225,7 +230,7 @@ object S3 {
                 KlipImage(bytes, contentType)
             }
         } catch (e: Exception) {
-            logger.error(e)
+            logger.debug { "cache miss: $cacheKey" }
             null // cache miss
         }
     }
@@ -258,6 +263,7 @@ object S3 {
         flipH: Boolean,
         flipV: Boolean,
         rotate: Float?,
+        quality: Int?
     ): String {
         val baseName = path.substringBeforeLast('.') // remove the extension
         val extension = getFileExtension(path)
@@ -269,6 +275,7 @@ object S3 {
         if (rotate != null && rotate != 0f) params.add("r${rotate.toInt()}")
         if (flipH) params.add("h1")
         if (flipV) params.add("v1")
+        if (quality != null) params.add("q$quality")
 
         return "${baseName}-${params.joinToString("")}.$extension"
     }
@@ -284,19 +291,25 @@ object ImageProcessor {
         crop: Boolean,
         flipH: Boolean,
         flipV: Boolean,
-        rotate: Float?
+        rotate: Float?,
+        quality: Int?
     ): ByteArray {
-        val transforms: List<(BufferedImage) -> BufferedImage> = listOfNotNull(
+        val inputImage: BufferedImage = ImageIO.read(ByteArrayInputStream(image.data))
+        val processedImage = listOfNotNull<(BufferedImage) -> BufferedImage>(
             { img -> if (crop) cropImage(img, width, height) else img },
             { img -> resizeImage(img, width, height) },
             { img -> if (grayscale) applyGrayscale(img) else img },
             { img -> if (flipH) applyFlipH(img) else img },
             { img -> if (flipV) applyFlipV(img) else img },
             { img -> if (rotate != null) applyRotation(img, rotate) else img }
-        )
-        val inputImage: BufferedImage = ImageIO.read(ByteArrayInputStream(image.data))
-        val outputImage = transforms.fold(inputImage) { img, transform -> transform(img) }
-        return outputImage.toByteArray(format = image.contentType.contentSubtype)
+        ).fold(inputImage) { img, transform -> transform(img) }
+
+        // note adding quality last as applyQuality returns ByteArray, not a BufferedImage
+        return if (quality != null) {
+            applyQuality(processedImage, quality, image.contentType.contentSubtype)
+        } else {
+            processedImage.toByteArray(format = image.contentType.contentSubtype)
+        }
     }
 
     fun resizeImage(image: BufferedImage, width: Int, height: Int): BufferedImage {
@@ -351,13 +364,63 @@ object ImageProcessor {
         graphics.dispose()
         return rotatedImage
     }
+
+    fun applyQuality(image: BufferedImage, quality: Int, format: String): ByteArray {
+        val adjustedQuality = quality.coerceIn(1, 100) / 100.0f
+        logger.debug { "Format: $format, Quality: $quality, Adjusted: $adjustedQuality" }
+
+        val outputStream = ByteArrayOutputStream()
+
+        when (format.lowercase()) {
+            "jpeg", "jpg" -> {
+                // JPEG supports lossy compression
+                val writer = ImageIO.getImageWritersByFormatName(format).next()
+                val param = writer.defaultWriteParam.apply {
+                    compressionMode = ImageWriteParam.MODE_EXPLICIT
+                    compressionQuality = adjustedQuality
+                }
+
+                ImageIO.createImageOutputStream(outputStream).use { output ->
+                    writer.output = output
+                    writer.write(null, IIOImage(image, null, null), param)
+                }
+                writer.dispose()
+            }
+            "png" -> {
+                // PNG is always lossless, but we can control deflate level
+                val writer = ImageIO.getImageWritersByFormatName(format).next()
+                val param = writer.defaultWriteParam.apply {
+                    compressionMode = ImageWriteParam.MODE_EXPLICIT
+                    compressionType = "Deflate"
+                    // For PNG, we invert the quality - lower quality = higher compression
+                    compressionQuality = 1.0f - adjustedQuality
+                }
+
+                ImageIO.createImageOutputStream(outputStream).use { output ->
+                    writer.output = output
+                    writer.write(null, IIOImage(image, null, null), param)
+                }
+                writer.dispose()
+            }
+            else -> {
+                // for other formats, just write with default settings
+                ImageIO.write(image, format, outputStream)
+            }
+        }
+
+        val finalBytes = outputStream.toByteArray()
+        logger.debug { "Final image size: ${finalBytes.size} bytes" }
+
+        return finalBytes
+    }
+
 }
 
 fun getFileExtension(filename: String, default: String = ""): String {
-    val name = filename.substringAfterLast('/') // Get last segment after path separator
+    val name = filename.substringAfterLast('/') // get last segment after path separator
     val lastDotIndex = name.lastIndexOf('.')
 
-    // No dot or the dot is the first character (hidden file without extension)
+    // no dot or the dot is the first character (hidden file without extension)
     if (lastDotIndex <= 0) return default
 
     return name.substring(lastDotIndex + 1).lowercase()
