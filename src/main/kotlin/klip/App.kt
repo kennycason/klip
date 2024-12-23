@@ -72,7 +72,10 @@ fun main() {
 
     embeddedServer(CIO, port = env.http.port) {
         install(ContentNegotiation) {
-            json(Json { prettyPrint = true })
+            json(Json {
+                prettyPrint = true
+                encodeDefaults = true
+            })
         }
         setup(env)
     }.start(wait = true)
