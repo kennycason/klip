@@ -144,6 +144,7 @@ resource "aws_security_group" "ecs_tasks_sg" {
 
   lifecycle {
     create_before_destroy = true
+    ignore_changes = [ingress] # Ignore manual changes in AWS (while testing)
   }
 
   tags = var.tags
@@ -152,8 +153,8 @@ resource "aws_security_group" "ecs_tasks_sg" {
 # ECS Tasks Security Group Rules
 resource "aws_security_group_rule" "ecs_ingress" {
   type                     = "ingress"
-  from_port                = 8888
-  to_port                  = 8888
+  from_port                = 8080
+  to_port                  = 8080
   protocol                 = "tcp"
   source_security_group_id = aws_security_group.alb_sg.id
   security_group_id        = aws_security_group.ecs_tasks_sg.id
@@ -211,8 +212,8 @@ resource "aws_ecs_task_definition" "klip_task" {
 
       portMappings = [
         {
-          containerPort = 8888
-          hostPort      = 8888
+          containerPort = 8080
+          hostPort      = 8080
         }
       ]
 
@@ -247,6 +248,7 @@ resource "aws_ecs_service" "klip_service" {
   task_definition = aws_ecs_task_definition.klip_task.arn
   desired_count   = 2
   launch_type     = "FARGATE"
+#  enable_execute_command = true # enable ssh access
 
   lifecycle {
     create_before_destroy = true
@@ -261,12 +263,17 @@ resource "aws_ecs_service" "klip_service" {
   load_balancer {
     target_group_arn = aws_lb_target_group.klip_tg.arn
     container_name   = "klip-container"
-    container_port   = 8888
+    container_port   = 8080
   }
 
   depends_on = [
-    aws_lb_listener.http_listener, aws_security_group.alb_sg, aws_security_group.ecs_tasks_sg, aws_security_group_rule.alb_ingress,
-    aws_security_group_rule.alb_egress, aws_security_group_rule.ecs_ingress, aws_security_group_rule.ecs_egress
+    aws_lb_listener.http_listener,
+    aws_security_group.alb_sg,
+    aws_security_group.ecs_tasks_sg,
+    aws_security_group_rule.alb_ingress,
+    aws_security_group_rule.alb_egress,
+    aws_security_group_rule.ecs_ingress,
+    aws_security_group_rule.ecs_egress
   ]
 }
 
@@ -292,7 +299,7 @@ resource "aws_lb" "klip_lb" {
 # Target Group
 resource "aws_lb_target_group" "klip_tg" {
   name        = "${var.service_name}-${var.stack}-tg"
-  port        = 8888
+  port        = 8080
   protocol    = "HTTP"
   vpc_id      = var.vpc_id
   target_type = "ip"
@@ -303,6 +310,7 @@ resource "aws_lb_target_group" "klip_tg" {
 
   health_check {
     path                = "/health"
+    port                = "8080"
     interval            = 30
     timeout             = 5
     healthy_threshold   = 3
