@@ -5,10 +5,11 @@ It supports caching, resizing, cropping, grayscale filters, and rotation via HTT
 
 ---
 
-# Installation + Run
+## Installation + Run
 
-## Prerequisites
-- Java 21+ installed
+### Prerequisites
+- Java 21+
+- Gradle
 
 
 ##  Environment Configuration (Env)
