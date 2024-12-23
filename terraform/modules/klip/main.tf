@@ -22,7 +22,9 @@ resource "aws_iam_policy" "ecs_s3_custom_policy" {
     Version = "2012-10-17", Statement = concat(
       [
         {
-          Effect = "Allow", Action = ["s3:GetObject", "s3:ListBucket"], Resource = [
+          Effect = "Allow", Action = [
+          "s3:GetObject", "s3:ListBucket", "s3:PutObject"
+        ], Resource = [
           "arn:aws:s3:::${var.klip_s3_bucket}", "arn:aws:s3:::${var.klip_s3_bucket}/*"
         ]
         }

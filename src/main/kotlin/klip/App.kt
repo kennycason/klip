@@ -1,8 +1,10 @@
 package klip
 
+import aws.sdk.kotlin.runtime.auth.credentials.DefaultChainCredentialsProvider
 import aws.sdk.kotlin.services.s3.S3Client
 import aws.sdk.kotlin.services.s3.model.GetObjectRequest
 import aws.sdk.kotlin.runtime.auth.credentials.ProfileCredentialsProvider
+import aws.smithy.kotlin.runtime.client.LogMode
 import aws.smithy.kotlin.runtime.content.ByteStream
 import aws.smithy.kotlin.runtime.content.toByteArray
 import io.ktor.http.*
@@ -76,7 +78,11 @@ object Routes {
     fun Application.setup(env: Env) {
         val s3Client = S3Client {
             region = env.aws.region
-            credentialsProvider = ProfileCredentialsProvider()
+            credentialsProvider = DefaultChainCredentialsProvider()
+            if (System.getenv("AWS_PROFILE") == "default") { // for running local
+                credentialsProvider = ProfileCredentialsProvider(profileName = "default")
+            }
+
         }
 
         routing {
