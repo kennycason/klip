@@ -18,15 +18,7 @@ class CacheKeyTest {
                     height = 100,
                     grayscale = true,
                     crop = true,
-                    flipH = false,
-                    flipV = false,
-                    dither = false,
-                    rotate = 90f,
-                    quality = null,
-                    sharpen = null,
-                    colors = null,
-                    blurRadius = null,
-                    blurSigma = null
+                    rotate = 90f
                 )
             )
         ).isEqualTo("properties/1/0-100x100g1c1r90.png")
@@ -38,17 +30,7 @@ class CacheKeyTest {
                     path = "properties/1/0.jpeg",
                     width = 200,
                     height = 300,
-                    grayscale = true,
-                    crop = false,
-                    flipH = false,
-                    flipV = false,
-                    dither = false,
-                    rotate = null,
-                    quality = null,
-                    sharpen = null,
-                    colors = null,
-                    blurRadius = null,
-                    blurSigma = null
+                    grayscale = true
                 )
             )
         ).isEqualTo("properties/1/0-200x300g1.jpeg")
@@ -60,17 +42,8 @@ class CacheKeyTest {
                     path = "properties/1/0.jpeg",
                     width = 200,
                     height = 300,
-                    grayscale = false,
-                    crop = false,
                     flipH = true,
-                    flipV = true,
-                    dither = false,
-                    rotate = null,
-                    quality = null,
-                    sharpen = null,
-                    colors = null,
-                    blurRadius = null,
-                    blurSigma = null
+                    flipV = true
                 )
             )
         ).isEqualTo("properties/1/0-200x300h1v1.jpeg")
@@ -82,17 +55,7 @@ class CacheKeyTest {
                     path = "properties/1/0.bmp",
                     width = 50,
                     height = 50,
-                    grayscale = false,
-                    crop = false,
-                    flipH = false,
-                    flipV = false,
-                    dither = false,
-                    rotate = null,
-                    quality = 64,
-                    sharpen = null,
-                    colors = null,
-                    blurRadius = null,
-                    blurSigma = null
+                    quality = 64
                 )
             )
         ).isEqualTo("properties/1/0-50x50q64.bmp")
@@ -104,17 +67,6 @@ class CacheKeyTest {
                     path = "properties/1/0.bmp",
                     width = 50,
                     height = 50,
-                    grayscale = false,
-                    crop = false,
-                    flipH = false,
-                    flipV = false,
-                    dither = false,
-                    rotate = null,
-                    quality = null,
-                    sharpen = null,
-                    colors = null,
-                    blurRadius = null,
-                    blurSigma = null
                 )
             )
         ).isEqualTo("properties/1/0-50x50.bmp")

@@ -285,11 +285,11 @@ data class KlipTransforms(
             val path = parameters.getAll("path")?.joinToString("/") ?: ""
 
             // parse boolean flags
-            val grayscale = isParamTrue(parameters["grayscale"])
-            val crop = isParamTrue(parameters["crop"])
-            val flipH = isParamTrue(parameters["flipH"])
-            val flipV = isParamTrue(parameters["flipV"])
-            val dither = isParamTrue(parameters["dither"])
+            val grayscale = isParamTrue("grayscale", parameters)
+            val crop = isParamTrue("crop", parameters)
+            val flipH = isParamTrue("flipH", parameters)
+            val flipV = isParamTrue("flipV", parameters)
+            val dither = isParamTrue("dither", parameters)
 
             // parse numeric parameters
             val rotate = parameters["rotate"]?.toFloatOrNull()
@@ -342,8 +342,10 @@ data class KlipTransforms(
         /**
          * Check if parameter is a valid boolean flag.
          */
-        private fun isParamTrue(value: String?): Boolean {
-            return value != null && (value == "1" || value == "true" || value.isEmpty())
+        private fun isParamTrue(key: String, parameters: Parameters): Boolean {
+            val value = parameters[key]
+            return (key in parameters && parameters[key] == null) ||    // 0-arity parameters like ?flipV
+                (value == "1" || value == "true")                       // 1-arity parameters like?flipV=1 or ?flipV=true
         }
     }
 }
