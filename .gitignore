@@ -65,3 +65,6 @@ dist/
 # Kotlin Native Specific
 .kotlin/metadata/kotlinCInteropLibraries/
 .kotlin/metadata/kotlinTransformedMetadataLibraries/
+
+# Docker
+Dockerfile

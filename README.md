@@ -288,3 +288,26 @@ Response:
 ```
 
 ---
+
+
+# Docker
+
+## Build the project
+
+```shell
+./gradlew clean build
+```
+
+## Create Dockerfile from template (one-time step)
+
+```shell
+cp Dockerfile.template Dockerfile
+```
+
+Afterward set the `ENV` variables as needed.
+
+## Build Docker image
+
+```shell
+docker build -t klip:latest .
+```
