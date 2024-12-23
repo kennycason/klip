@@ -127,9 +127,9 @@ object Routes {
     private suspend fun ApplicationCall.handleImageRequest(s3Client: S3Client, env: Env) {
         // extract size and path
         val size = parameters["size"] ?: ""
-        val match = Regex("(\\d+)x(\\d+)").matchEntire(size)
-        val width = match?.groups?.get(1)?.value?.toIntOrNull()
-        val height = match?.groups?.get(2)?.value?.toIntOrNull()
+        val resizeMatch = Regex("(\\d+)x(\\d+)").matchEntire(size)
+        val width = resizeMatch?.groups?.get(1)?.value?.toIntOrNull()
+        val height = resizeMatch?.groups?.get(2)?.value?.toIntOrNull()
 
         val path = parameters.getAll("path")?.joinToString("/") ?: ""
 
@@ -138,10 +138,19 @@ object Routes {
         val crop = isParamTrue(request.queryParameters["crop"])
         val flipH = isParamTrue(request.queryParameters["flipH"])
         val flipV = isParamTrue(request.queryParameters["flipV"])
+        val dither = isParamTrue(request.queryParameters["dither"])
 
         // handle float and int values
         val rotate = request.queryParameters["rotate"]?.toFloatOrNull()
         val quality = request.queryParameters["quality"]?.toIntOrNull()
+        val sharpen = request.queryParameters["sharpen"]?.toFloatOrNull()
+        val colors = request.queryParameters["colors"]?.toIntOrNull()
+
+        // blur
+        val blur = parameters["blur"] ?: ""
+        val blurMatch = Regex("(\\d+)x(\\d+)").matchEntire(blur)
+        val blurRadius = blurMatch?.groups?.get(1)?.value?.toFloatOrNull()
+        val blurSigma = blurMatch?.groups?.get(2)?.value?.toFloatOrNull()
 
         if (width == null || height == null) {
             respond(HttpStatusCode.BadRequest, "Invalid width or height")
@@ -155,8 +164,13 @@ object Routes {
                 crop = crop,
                 flipH = flipH,
                 flipV = flipV,
+                dither = dither,
                 rotate = rotate,
-                quality = quality
+                quality = quality,
+                sharpen = sharpen,
+                colors = colors,
+                blurRadius = blurRadius,
+                blurSigma = blurSigma,
             )
         logger.info("Cache Key: $cacheKey")
 
@@ -183,8 +197,13 @@ object Routes {
                 crop = crop,
                 flipH = flipH,
                 flipV = flipV,
+                dither = dither,
                 rotate = rotate,
-                quality = quality
+                quality = quality,
+                sharpen = sharpen,
+                colors = colors,
+                blurRadius = blurRadius,
+                blurSigma = blurSigma,
             )
 
             if (env.cache.enabled) {
@@ -285,8 +304,13 @@ object S3 {
         crop: Boolean,
         flipH: Boolean,
         flipV: Boolean,
+        dither: Boolean,
         rotate: Float?,
-        quality: Int?
+        quality: Int?,
+        sharpen: Float?,
+        colors: Int?,
+        blurRadius: Float?,
+        blurSigma: Float?,
     ): String {
         val baseName = path.substringBeforeLast('.') // remove the extension
         val extension = getFileExtension(path)
@@ -298,7 +322,11 @@ object S3 {
         if (rotate != null && rotate != 0f) params.add("r${rotate.toInt()}")
         if (flipH) params.add("h1")
         if (flipV) params.add("v1")
+        if (dither) params.add("d1")
         if (quality != null) params.add("q$quality")
+        if (sharpen != null) params.add("sharpen$quality")
+        if (colors != null) params.add("colors$quality")
+        if (blurRadius != null && blurSigma != null) params.add("blur${blurRadius}x${blurSigma}")
 
         return "${baseName}-${params.joinToString("")}.$extension"
     }
@@ -314,8 +342,13 @@ object GraphicsMagickImageProcessor {
         crop: Boolean,
         flipH: Boolean,
         flipV: Boolean,
+        dither: Boolean,
         rotate: Float?,
         quality: Int?,
+        sharpen: Float?,
+        colors: Int?,
+        blurRadius: Float?,
+        blurSigma: Float?,
     ): ByteArray {
         val tempDir = File("/tmp")
         val inputFile = File(tempDir, "gm_input_${UUID.randomUUID()}.${image.extension}")
@@ -328,51 +361,64 @@ object GraphicsMagickImageProcessor {
             val command = mutableListOf("gm", "convert")
             command.add(inputFile.absolutePath)
 
+            // crop before resize
             if (crop) {
                 command.add("-gravity")
                 command.add("center")
                 command.add("-crop")
-                command.add("${width}x${height}+0+0") // Crop to center
+                command.add("${width}x${height}+0+0")
             }
 
             command.add("-resize")
-            command.add("${width}x${height}") // Resize afterward
+            command.add("${width}x${height}")
 
             if (grayscale) {
                 command.add("-colorspace")
                 command.add("Gray")
             }
 
-            if (flipH) {
-                command.add("-flop")
-            }
-
-            if (flipV) {
-                command.add("-flip")
-            }
+            if (flipH) command.add("-flop")
+            if (flipV) command.add("-flip")
 
             if (rotate != null) {
                 command.add("-rotate")
-                command.add(rotate.toString()) // Rotate by degrees
+                command.add(rotate.toString())
+            }
+
+            if (blurRadius != null && blurSigma != null) {
+                command.add("-blur")
+                command.add("${blurRadius}x${blurSigma}") // Format: 0x<sigma>
+            }
+
+            if (sharpen != null) {
+                command.add("-sharpen")
+                command.add("0x$sharpen") // Format: 0x<radius>
+            }
+
+            if (colors != null) {
+                command.add("-colors")
+                command.add(colors.toString())
+            }
+
+            if (dither) {
+                command.add("-dither")
             }
 
             if (quality != null) {
                 command.add("-quality")
-                command.add(quality.toString()) // JPEG/PNG compression
+                command.add(quality.toString())
             }
 
             command.add(outputFile.absolutePath)
 
             logger.debug { "GraphicsMagick cmd: $command" }
 
-            val process = ProcessBuilder(command)
-                .redirectErrorStream(true)
-                .start()
+            val process = ProcessBuilder(command).redirectErrorStream(true).start()
 
-            // capture output (for debugging errors)
+            // capture errors for debugging
             val errorOutput = StringBuilder()
             process.inputStream.bufferedReader().use { reader ->
-                reader.forEachLine { line -> errorOutput.appendLine(line) }
+                reader.forEachLine { errorOutput.appendLine(it) }
             }
 
             val exitCode = process.waitFor()
@@ -399,8 +445,12 @@ object ImageIOImageProcessor {
         crop: Boolean,
         flipH: Boolean,
         flipV: Boolean,
+        dither: Boolean,
         rotate: Float?,
-        quality: Int?
+        quality: Int?,
+        blur: Float?,
+        sharpen: Float?,
+        colors: Int?
     ): ByteArray {
         val inputImage: BufferedImage = ImageIO.read(ByteArrayInputStream(image.data))
         val processedImage = listOfNotNull<(BufferedImage) -> BufferedImage>(

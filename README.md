@@ -55,7 +55,7 @@ Fetch the original image stored in the S3 bucket without any transformations.
 Example:
 
 ```bash
-GET http://localhost:8080/img/pokemon/1/primary.png
+GET http://localhost:8080/img/properties/1/04c08449e126.png
 ```
 
 <img src="https://github.com/kennycason/klip/blob/main/images/original.png?raw=true" width="500px"/>
@@ -80,7 +80,7 @@ Query Parameters:
 Example:
 
 ```bash
-GET http://localhost:8080/img/250x250/pokemon/1/primary.png
+GET http://localhost:8080/img/250x250/properties/1/04c08449e126.png
 ```
 
 ![Resized Image](https://github.com/kennycason/klip/blob/main/images/resized.png?raw=true)
@@ -108,7 +108,7 @@ Examples:
 
 ```bash
 # High Quality (Default)
-GET http://localhost:8080/img/250x250/pokemon/1/primary.png?quality=100
+GET http://localhost:8080/img/250x250/properties/1/04c08449e126.png?quality=100
 # Medium-High Quality
 GET http://localhost:8080/img/1301x781/properties/102/05013ad4469e00a7aed9596bc37af74e.jpg?quality=75
 # Medium Quality
@@ -150,7 +150,7 @@ Query Parameters:
 Example:
 
 ```bash
-GET http://localhost:8080/img/250x250/pokemon/1/primary.png?crop
+GET http://localhost:8080/img/250x250/properties/1/04c08449e126.png?crop
 ```
 
 ![Cropped Image](https://github.com/kennycason/klip/blob/main/images/cropped.png?raw=true)
@@ -174,7 +174,7 @@ Query Parameters:
 Example:
 
 ```bash
-GET http://localhost:8080/img/250x250/pokemon/1/primary.png?grayscale
+GET http://localhost:8080/img/250x250/properties/1/04c08449e126.png?grayscale
 ```
 
 ![Grayscale Image](https://github.com/kennycason/klip/blob/main/images/resized_grayscale.png?raw=true)
@@ -198,7 +198,7 @@ Query Parameters:
 Example:
 
 ```bash
-GET http://localhost:8080/img/250x250/pokemon/1/primary.png?flipH
+GET http://localhost:8080/img/250x250/properties/1/04c08449e126.png?flipH
 ```
 
 ![Flipped Horizontally](https://github.com/kennycason/klip/blob/main/images/resized_fliph.png?raw=true)
@@ -222,7 +222,7 @@ Query Parameters:
 Example - Flip vertically:
 
 ```bash
-GET http://localhost:8080/img/250x250/pokemon/1/primary.png?flipV
+GET http://localhost:8080/img/250x250/properties/1/04c08449e126.png?flipV
 ```
 
 ![Flipped Vertically](https://github.com/kennycason/klip/blob/main/images/resized_flipv.png?raw=true)
@@ -230,7 +230,7 @@ GET http://localhost:8080/img/250x250/pokemon/1/primary.png?flipV
 Example - Flip both horizontally and vertically:
 
 ```bash
-GET http://localhost:8080/img/250x250/pokemon/1/primary.png?flipH&flipV
+GET http://localhost:8080/img/250x250/properties/1/04c08449e126.png?flipH&flipV
 ```
 
 ![Flipped Both](https://github.com/kennycason/klip/blob/main/images/resized_fliph_flipv.png?raw=true)
@@ -254,10 +254,111 @@ Query Parameters:
 Example - Rotate image 45 degrees:
 
 ```bash
-GET http://localhost:8080/img/250x250/pokemon/1/primary.png?rotate=45
+GET http://localhost:8080/img/250x250/properties/1/04c08449e126.png?rotate=45
 ```
 
 ![Rotated Image](https://github.com/kennycason/klip/blob/main/images/resized_rotated45.png?raw=true)
+
+---
+
+## Blur Image
+
+```
+GET /img/{blurRadius}x{blurSigma}/{path/to/image}?blur=0x2
+```
+
+Apply a **Gaussian blur** to the image to soften details.
+
+Query Parameters:
+
+| Parameter | Type   | Required | Default | Description                                         |
+|-----------|--------|----------|---------|-----------------------------------------------------|
+| `blur`    | String | No       | `0x0`   | Applies Gaussian blur in the format `radiusxsigma`. |
+
+- **`radius`**: Defines the area of the blur effect (higher = wider blur).
+- **`sigma`**: Controls the strength of the blur (higher = softer edges).
+
+Example - Mild blur:
+
+```bash
+GET http://localhost:8080/img/250x250/properties/1/04c08449e126.png?blur=0x2
+```
+
+![Blurred Image](https://github.com/kennycason/klip/blob/main/images/blur0x2.png?raw=true)
+
+---
+
+## Sharpen Image
+
+```
+GET /img/{width}x{height}/{path/to/image}?sharpen=2.0
+```
+
+Sharpen the image to enhance details and make edges clearer.
+
+Query Parameters:
+
+| Parameter | Type  | Required | Default | Description                                      |
+|-----------|-------|----------|---------|--------------------------------------------------|
+| `sharpen` | Float | No       | `0`     | Applies sharpening in the format `radiusxsigma`. |
+
+- **`radius`**: Defines the area of the blur effect (higher = wider blur).
+- **`sigma`**: Controls the strength of the blur (higher = softer edges).
+
+Example - Mild blur:
+
+```bash
+GET http://localhost:8080/img/250x250/properties/1/04c08449e126.png?sharpen=2.0
+```
+
+![Blurred Image](https://github.com/kennycason/klip/blob/main/images/sharpen2.0.png?raw=true)
+
+---
+
+## Color Adjustment
+
+```
+GET /img/{width}x{height}/{path/to/image}?colors=16
+```
+
+Reduce the number of colors in the image to simplify or stylize it.
+
+Query Parameters:
+
+| Parameter | Type | Required | Default | Description                                     |
+|-----------|------|----------|---------|-------------------------------------------------|
+| `colors`  | Int  | No       | `256`   | Reduces the image to the specified color count. |
+
+Example - 10 colors:
+
+```bash
+GET http://localhost:8080/img/250x250/properties/1/04c08449e126.png?colors=10
+```
+
+![Blurred Image](https://github.com/kennycason/klip/blob/main/images/colors10.png?raw=true)
+
+---
+
+## Dithering
+
+```
+GET /img/{width}x{height}/{path/to/image}?dither
+```
+
+Enable or disable dithering to improve color approximation when reducing colors.
+
+Query Parameters:
+
+| Parameter | Type    | Required | Default | Description       |
+|-----------|---------|----------|---------|-------------------|
+| `dither`  | Boolean | No       | false   | Enable dithering. |
+
+Example - 10 colors:
+
+```bash
+GET http://localhost:8080/img/250x250/properties/1/04c08449e126.png?dither
+```
+
 
 ---
 
@@ -272,7 +373,7 @@ Apply multiple transformations in a single request.
 Example:
 
 ```bash
-GET http://localhost:8080/img/250x250/pokemon/1/primary.png?grayscale&crop&rotate=90
+GET http://localhost:8080/img/250x250/properties/1/04c08449e126.png?grayscale&crop&rotate=90
 ```
 
 ![Combined Filters](https://github.com/kennycason/klip/blob/main/images/combined_transforms.png?raw=true)

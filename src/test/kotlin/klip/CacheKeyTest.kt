@@ -18,8 +18,13 @@ class CacheKeyTest {
             crop = true,
             flipH = false,
             flipV = false,
+            dither = false,
             rotate = 90f,
-            quality = null
+            quality = null,
+            sharpen = null,
+            colors = null,
+            blurRadius = null,
+            blurSigma = null
         )).isEqualTo("properties/1/0-100x100g1c1r90.png")
 
         // some parameters omitted
@@ -31,8 +36,13 @@ class CacheKeyTest {
             crop = false,
             flipH = false,
             flipV = false,
+            dither = false,
             rotate = null,
-            quality = null
+            quality = null,
+            sharpen = null,
+            colors = null,
+            blurRadius = null,
+            blurSigma = null
         )).isEqualTo("properties/1/0-200x300g1.jpeg")
 
         // flipH +flipV
@@ -44,8 +54,13 @@ class CacheKeyTest {
             crop = false,
             flipH = true,
             flipV = true,
+            dither = false,
             rotate = null,
-            quality = null
+            quality = null,
+            sharpen = null,
+            colors = null,
+            blurRadius = null,
+            blurSigma = null
         )).isEqualTo("properties/1/0-200x300h1v1.jpeg")
 
         // quality
@@ -57,8 +72,13 @@ class CacheKeyTest {
             crop = false,
             flipH = false,
             flipV = false,
+            dither = false,
             rotate = null,
-            quality = 64
+            quality = 64,
+            sharpen = null,
+            colors = null,
+            blurRadius = null,
+            blurSigma = null
         )).isEqualTo("properties/1/0-50x50q64.bmp")
 
         // no transformations
@@ -70,8 +90,13 @@ class CacheKeyTest {
             crop = false,
             flipH = false,
             flipV = false,
+            dither = false,
             rotate = null,
-            quality = null
+            quality = null,
+            sharpen = null,
+            colors = null,
+            blurRadius = null,
+            blurSigma = null
         )).isEqualTo("properties/1/0-50x50.bmp")
     }
 }

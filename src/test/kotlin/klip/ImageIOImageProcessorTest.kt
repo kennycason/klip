@@ -23,8 +23,13 @@ class ImageIOImageProcessorTest {
             crop = false,
             flipH = false,
             flipV = false,
+            dither = false,
             rotate = null,
             quality = null,
+            sharpen = null,
+            colors = null,
+            blurRadius = null,
+            blurSigma = null
         )
 
         val outputImage = ImageIO.read(result.inputStream())
@@ -45,8 +50,13 @@ class ImageIOImageProcessorTest {
             crop = false,
             flipH = false,
             flipV = false,
+            dither = false,
             rotate = null,
             quality = null,
+            sharpen = null,
+            colors = null,
+            blurRadius = null,
+            blurSigma = null
         )
 
         val outputImage = ImageIO.read(result.inputStream())
@@ -68,8 +78,13 @@ class ImageIOImageProcessorTest {
             crop = false,
             flipH = false,
             flipV = false,
+            dither = false,
             rotate = 90f,
             quality = null,
+            sharpen = null,
+            colors = null,
+            blurRadius = null,
+            blurSigma = null
         )
 
         val outputImage = ImageIO.read(result.inputStream())
