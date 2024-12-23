@@ -18,24 +18,13 @@ import klip.Routes.setup
 import klip.S3.checkCache
 import klip.S3.generateCacheKey
 import klip.S3.writeToCache
-import klip.image.toByteArray
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import org.apache.logging.log4j.core.config.Configurator
 import org.apache.logging.log4j.kotlin.logger
 import org.apache.logging.log4j.Level
-import java.awt.Image
-import java.awt.image.BufferedImage
-import java.io.ByteArrayInputStream
-import java.io.ByteArrayOutputStream
 import java.io.File
 import java.util.UUID
-import javax.imageio.IIOImage
-import javax.imageio.ImageIO
-import javax.imageio.ImageWriteParam
-import kotlin.math.abs
-import kotlin.math.cos
-import kotlin.math.sin
 
 private val logger = logger("Klip")
 
@@ -125,53 +114,10 @@ object Routes {
     }
 
     private suspend fun ApplicationCall.handleImageRequest(s3Client: S3Client, env: Env) {
-        // extract size and path
-        val size = parameters["size"] ?: ""
-        val resizeMatch = Regex("(\\d+)x(\\d+)").matchEntire(size)
-        val width = resizeMatch?.groups?.get(1)?.value?.toIntOrNull()
-        val height = resizeMatch?.groups?.get(2)?.value?.toIntOrNull()
-
-        val path = parameters.getAll("path")?.joinToString("/") ?: ""
-
-        // handle boolean values
-        val grayscale = isParamTrue(request.queryParameters["grayscale"])
-        val crop = isParamTrue(request.queryParameters["crop"])
-        val flipH = isParamTrue(request.queryParameters["flipH"])
-        val flipV = isParamTrue(request.queryParameters["flipV"])
-        val dither = isParamTrue(request.queryParameters["dither"])
-
-        // handle float and int values
-        val rotate = request.queryParameters["rotate"]?.toFloatOrNull()
-        val quality = request.queryParameters["quality"]?.toIntOrNull()
-        val sharpen = request.queryParameters["sharpen"]?.toFloatOrNull()
-        val colors = request.queryParameters["colors"]?.toIntOrNull()
-
-        // blur
-        val blur = parameters["blur"] ?: ""
-        val blurMatch = Regex("(\\d+)x(\\d+)").matchEntire(blur)
-        val blurRadius = blurMatch?.groups?.get(1)?.value?.toFloatOrNull()
-        val blurSigma = blurMatch?.groups?.get(2)?.value?.toFloatOrNull()
-
-        if (width == null || height == null) {
-            respond(HttpStatusCode.BadRequest, "Invalid width or height")
-            return
-        }
+        val transforms = KlipTransforms.from(parameters)
 
         val cacheKey =
-            generateCacheKey(
-                path, width, height,
-                grayscale = grayscale,
-                crop = crop,
-                flipH = flipH,
-                flipV = flipV,
-                dither = dither,
-                rotate = rotate,
-                quality = quality,
-                sharpen = sharpen,
-                colors = colors,
-                blurRadius = blurRadius,
-                blurSigma = blurSigma,
-            )
+            generateCacheKey(transforms)
         logger.info("Cache Key: $cacheKey")
 
         // check cache
@@ -185,26 +131,13 @@ object Routes {
             }
         }
 
-        val s3Image = S3.readFile(s3Client, env.aws.s3Bucket, path)
+        val s3Image = S3.readFile(s3Client, env.aws.s3Bucket, transforms.path)
         if (s3Image == null) {
-            respond(HttpStatusCode.NotFound, "File not found: $path")
+            respond(HttpStatusCode.NotFound, "File not found: $transforms.path")
             return
         }
         try {
-            val processedImage = GraphicsMagickImageProcessor.processImage(
-                s3Image, width, height,
-                grayscale = grayscale,
-                crop = crop,
-                flipH = flipH,
-                flipV = flipV,
-                dither = dither,
-                rotate = rotate,
-                quality = quality,
-                sharpen = sharpen,
-                colors = colors,
-                blurRadius = blurRadius,
-                blurSigma = blurSigma,
-            )
+            val processedImage = GraphicsMagickImageProcessor.processImage(s3Image, transforms)
 
             if (env.cache.enabled) {
                 writeToCache(s3Client, env, cacheKey, processedImage)
@@ -229,8 +162,6 @@ object Routes {
         }
     }
 
-    private val TRUE_VALUES = setOf("1", "")
-    private fun isParamTrue(value: String?): Boolean = value in TRUE_VALUES
 }
 
 object S3 {
@@ -296,39 +227,124 @@ object S3 {
         s3Client.putObject(request)
     }
 
-    fun generateCacheKey(
-        path: String,
-        width: Int,
-        height: Int,
-        grayscale: Boolean,
-        crop: Boolean,
-        flipH: Boolean,
-        flipV: Boolean,
-        dither: Boolean,
-        rotate: Float?,
-        quality: Int?,
-        sharpen: Float?,
-        colors: Int?,
-        blurRadius: Float?,
-        blurSigma: Float?,
-    ): String {
-        val baseName = path.substringBeforeLast('.') // remove the extension
-        val extension = getFileExtension(path)
+    fun generateCacheKey(t: KlipTransforms): String {
+        val baseName = t.path.substringBeforeLast('.') // remove the extension
+        val extension = getFileExtension(t.path)
 
         // only include active transforms in key
-        val params = mutableListOf("${width}x${height}")
-        if (grayscale) params.add("g1")
-        if (crop) params.add("c1")
-        if (rotate != null && rotate != 0f) params.add("r${rotate.toInt()}")
-        if (flipH) params.add("h1")
-        if (flipV) params.add("v1")
-        if (dither) params.add("d1")
-        if (quality != null) params.add("q$quality")
-        if (sharpen != null) params.add("sharpen$quality")
-        if (colors != null) params.add("colors$quality")
-        if (blurRadius != null && blurSigma != null) params.add("blur${blurRadius}x${blurSigma}")
+        val params = mutableListOf("${t.width}x${t.height}")
+        if (t.grayscale) params.add("g1")
+        if (t.crop) params.add("c1")
+        if (t.rotate != null && t.rotate != 0f) params.add("r${t.rotate.toInt()}")
+        if (t.flipH) params.add("h1")
+        if (t.flipV) params.add("v1")
+        if (t.dither) params.add("d1")
+        if (t.quality != null) params.add("q${t.quality}")
+        if (t.sharpen != null) params.add("sharpen${t.quality}")
+        if (t.colors != null) params.add("colors${t.quality}")
+        if (t.blurRadius != null && t.blurSigma != null) params.add("blur${t.blurRadius}x${t.blurSigma}")
 
         return "${baseName}-${params.joinToString("")}.$extension"
+    }
+}
+
+data class KlipTransforms(
+    val path: String,
+    val width: Int,
+    val height: Int,
+    val grayscale: Boolean = false,
+    val crop: Boolean = false,
+    val flipH: Boolean = false,
+    val flipV: Boolean = false,
+    val dither: Boolean = false,
+    val rotate: Float? = null,
+    val quality: Int? = null,
+    val sharpen: Float? = null,
+    val colors: Int? = null,
+    val blurRadius: Double? = null,
+    val blurSigma: Double? = null
+) {
+
+    fun verify() {
+        require(width > 0 && height > 0) { "Invalid width or height: ${width}x${height}" }
+        require(quality == null || (quality in 1..100)) { "quality must be between 1 and 100." }
+        require(sharpen == null || sharpen >= 0) { "sharpen must be >= 0." }
+        require(colors == null || colors in 2..256) { "colors must be between 2 and 256." }
+        require(blurRadius == null || blurRadius >= 0) { "blur radius must be >= 0." }
+        require(blurSigma == null || blurSigma >= 0) { "blur sigma must be >= 0." }
+    }
+
+    companion object {
+        fun from(parameters: Parameters): KlipTransforms {
+            // extract size
+            val size = parameters["size"] ?: ""
+            val match = Regex("(\\d+)x(\\d+)").matchEntire(size)
+            val width = match?.groups?.get(1)?.value?.toIntOrNull()
+            val height = match?.groups?.get(2)?.value?.toIntOrNull()
+
+            val path = parameters.getAll("path")?.joinToString("/") ?: ""
+
+            // parse boolean flags
+            val grayscale = isParamTrue(parameters["grayscale"])
+            val crop = isParamTrue(parameters["crop"])
+            val flipH = isParamTrue(parameters["flipH"])
+            val flipV = isParamTrue(parameters["flipV"])
+            val dither = isParamTrue(parameters["dither"])
+
+            // parse numeric parameters
+            val rotate = parameters["rotate"]?.toFloatOrNull()
+            val quality = parameters["quality"]?.toIntOrNull()
+            val sharpen = parameters["sharpen"]?.toFloatOrNull()
+            val colors = parameters["colors"]?.toIntOrNull()
+
+            // handle blur (supports "radius" or "{radius}x{sigma}")
+            val blur = parameters["blur"]
+            val (blurRadius, blurSigma) = parseBlur(blur)
+
+            requireNotNull(width) { "Missing width in size parameter." }
+            requireNotNull(height) { "Missing height in size parameter." }
+
+            return KlipTransforms(
+                path = path,
+                width = width,
+                height = height,
+                grayscale = grayscale,
+                crop = crop,
+                flipH = flipH,
+                flipV = flipV,
+                dither = dither,
+                rotate = rotate,
+                quality = quality,
+                sharpen = sharpen,
+                colors = colors,
+                blurRadius = blurRadius,
+                blurSigma = blurSigma
+            ).apply { verify() } // Validate on creation
+        }
+
+        /**
+         * Parse blur input (supports single and compound formats).
+         */
+        private fun parseBlur(blur: String?): Pair<Double?, Double?> {
+            if (blur.isNullOrEmpty()) return null to null
+            val parts = blur.split("x")
+
+            return when (parts.size) {
+                2 -> parts[0].toDoubleOrNull() to parts[1].toDoubleOrNull()
+                1 -> {
+                    val radius = parts[0].toDoubleOrNull()
+                    radius?.let { Pair(it, it * 0.5) } ?: (null to null) // Default to nulls if parsing fails
+                }
+                else -> null to null
+            }
+        }
+
+        /**
+         * Check if parameter is a valid boolean flag.
+         */
+        private fun isParamTrue(value: String?): Boolean {
+            return value != null && (value == "1" || value == "true" || value.isEmpty())
+        }
     }
 }
 
@@ -336,19 +352,7 @@ object GraphicsMagickImageProcessor {
 
     fun processImage(
         image: KlipImage,
-        width: Int,
-        height: Int,
-        grayscale: Boolean,
-        crop: Boolean,
-        flipH: Boolean,
-        flipV: Boolean,
-        dither: Boolean,
-        rotate: Float?,
-        quality: Int?,
-        sharpen: Float?,
-        colors: Int?,
-        blurRadius: Float?,
-        blurSigma: Float?,
+        t: KlipTransforms
     ): ByteArray {
         val tempDir = File("/tmp")
         val inputFile = File(tempDir, "gm_input_${UUID.randomUUID()}.${image.extension}")
@@ -362,51 +366,51 @@ object GraphicsMagickImageProcessor {
             command.add(inputFile.absolutePath)
 
             // crop before resize
-            if (crop) {
+            if (t.crop) {
                 command.add("-gravity")
                 command.add("center")
                 command.add("-crop")
-                command.add("${width}x${height}+0+0")
+                command.add("${t.width}x${t.height}+0+0")
             }
 
             command.add("-resize")
-            command.add("${width}x${height}")
+            command.add("${t.width}x${t.height}")
 
-            if (grayscale) {
+            if (t.grayscale) {
                 command.add("-colorspace")
                 command.add("Gray")
             }
 
-            if (flipH) command.add("-flop")
-            if (flipV) command.add("-flip")
+            if (t.flipH) command.add("-flop")
+            if (t.flipV) command.add("-flip")
 
-            if (rotate != null) {
+            if (t.rotate != null) {
                 command.add("-rotate")
-                command.add(rotate.toString())
+                command.add(t.rotate.toString())
             }
 
-            if (blurRadius != null && blurSigma != null) {
+            if (t.blurRadius != null && t.blurSigma != null) {
                 command.add("-blur")
-                command.add("${blurRadius}x${blurSigma}") // Format: 0x<sigma>
+                command.add("${t.blurRadius}x${t.blurSigma}") // Format: 0x<sigma>
             }
 
-            if (sharpen != null) {
+            if (t.sharpen != null) {
                 command.add("-sharpen")
-                command.add("0x$sharpen") // Format: 0x<radius>
+                command.add("0x${t.sharpen}") // Format: 0x<radius>
             }
 
-            if (colors != null) {
+            if (t.colors != null) {
                 command.add("-colors")
-                command.add(colors.toString())
+                command.add(t.colors.toString())
             }
 
-            if (dither) {
+            if (t.dither) {
                 command.add("-dither")
             }
 
-            if (quality != null) {
+            if (t.quality != null) {
                 command.add("-quality")
-                command.add(quality.toString())
+                command.add(t.quality.toString())
             }
 
             command.add(outputFile.absolutePath)
@@ -434,145 +438,6 @@ object GraphicsMagickImageProcessor {
             outputFile.delete()
         }
     }
-}
-
-object ImageIOImageProcessor {
-    fun processImage(
-        image: KlipImage,
-        width: Int,
-        height: Int,
-        grayscale: Boolean,
-        crop: Boolean,
-        flipH: Boolean,
-        flipV: Boolean,
-        dither: Boolean,
-        rotate: Float?,
-        quality: Int?,
-        blur: Float?,
-        sharpen: Float?,
-        colors: Int?
-    ): ByteArray {
-        val inputImage: BufferedImage = ImageIO.read(ByteArrayInputStream(image.data))
-        val processedImage = listOfNotNull<(BufferedImage) -> BufferedImage>(
-            { img -> if (crop) cropImage(img, width, height) else img },
-            { img -> resizeImage(img, width, height) },
-            { img -> if (grayscale) applyGrayscale(img) else img },
-            { img -> if (flipH) applyFlipH(img) else img },
-            { img -> if (flipV) applyFlipV(img) else img },
-            { img -> if (rotate != null) applyRotation(img, rotate) else img }
-        ).fold(inputImage) { img, transform -> transform(img) }
-
-        // note adding quality last as applyQuality returns ByteArray, not a BufferedImage
-        return if (quality != null) {
-            applyQuality(processedImage, quality, image.contentType.contentSubtype)
-        } else {
-            processedImage.toByteArray(format = image.contentType.contentSubtype)
-        }
-    }
-
-    fun resizeImage(image: BufferedImage, width: Int, height: Int): BufferedImage {
-        val resized = BufferedImage(width, height, BufferedImage.TYPE_INT_RGB)
-        val g = resized.createGraphics()
-        g.drawImage(image.getScaledInstance(width, height, Image.SCALE_SMOOTH), 0, 0, null)
-        g.dispose()
-        return resized
-    }
-
-    fun cropImage(image: BufferedImage, width: Int, height: Int): BufferedImage {
-        val startX = (image.width - width) / 2
-        val startY = (image.height - height) / 2
-        return image.getSubimage(startX, startY, width, height)
-    }
-
-    fun applyGrayscale(image: BufferedImage): BufferedImage {
-        val grayImage = BufferedImage(image.width, image.height, BufferedImage.TYPE_BYTE_GRAY)
-        val g = grayImage.createGraphics()
-        g.drawImage(image, 0, 0, null)
-        g.dispose()
-        return grayImage
-    }
-
-    fun applyFlipH(image: BufferedImage): BufferedImage {
-        val flipped = BufferedImage(image.width, image.height, image.type)
-        val graphics = flipped.createGraphics()
-        graphics.drawImage(image, image.width, 0, 0, image.height, 0, 0, image.width, image.height, null)
-        graphics.dispose()
-        return flipped
-    }
-
-    fun applyFlipV(image: BufferedImage): BufferedImage {
-        val flipped = BufferedImage(image.width, image.height, image.type)
-        val graphics = flipped.createGraphics()
-        graphics.drawImage(image, 0, image.height, image.width, 0, 0, 0, image.width, image.height, null)
-        graphics.dispose()
-        return flipped
-    }
-
-    fun applyRotation(image: BufferedImage, rotate: Float): BufferedImage {
-        val radians = Math.toRadians(rotate.toDouble())
-        val sin = abs(sin(radians))
-        val cos = abs(cos(radians))
-        val newWidth = (image.width * cos + image.height * sin).toInt()
-        val newHeight = (image.width * sin + image.height * cos).toInt()
-        val rotatedImage = BufferedImage(newWidth, newHeight, image.type)
-        val graphics = rotatedImage.createGraphics()
-        graphics.translate((newWidth - image.width) / 2, (newHeight - image.height) / 2)
-        graphics.rotate(radians, (image.width / 2).toDouble(), (image.height / 2).toDouble())
-        graphics.drawRenderedImage(image, null)
-        graphics.dispose()
-        return rotatedImage
-    }
-
-    fun applyQuality(image: BufferedImage, quality: Int, format: String): ByteArray {
-        val adjustedQuality = quality.coerceIn(1, 100) / 100.0f
-        logger.debug { "Format: $format, Quality: $quality, Adjusted: $adjustedQuality" }
-
-        val outputStream = ByteArrayOutputStream()
-
-        when (format.lowercase()) {
-            "jpeg", "jpg" -> {
-                // JPEG supports lossy compression
-                val writer = ImageIO.getImageWritersByFormatName(format).next()
-                val param = writer.defaultWriteParam.apply {
-                    compressionMode = ImageWriteParam.MODE_EXPLICIT
-                    compressionQuality = adjustedQuality
-                }
-
-                ImageIO.createImageOutputStream(outputStream).use { output ->
-                    writer.output = output
-                    writer.write(null, IIOImage(image, null, null), param)
-                }
-                writer.dispose()
-            }
-            "png" -> {
-                // PNG uses lossless compression, so we set the deflate level instead.
-                val writer = ImageIO.getImageWritersByFormatName(format).next()
-                val param = writer.defaultWriteParam.apply {
-                    compressionMode = ImageWriteParam.MODE_EXPLICIT
-                    compressionType = "Deflate"
-                    // Map quality [1-100] to deflate level [0-9] (max compression)
-                    val deflateLevel = (9 * (1 - adjustedQuality)).toInt().coerceIn(0, 9)
-                    setCompressionQuality(deflateLevel / 9.0f)
-                }
-
-                ImageIO.createImageOutputStream(outputStream).use { output ->
-                    writer.output = output
-                    writer.write(null, IIOImage(image, null, null), param)
-                }
-                writer.dispose()
-            }
-            else -> {
-                // for other formats, just write with default settings
-                ImageIO.write(image, format, outputStream)
-            }
-        }
-
-        val finalBytes = outputStream.toByteArray()
-        logger.debug { "Final image size: ${finalBytes.size} bytes" }
-
-        return finalBytes
-    }
-
 }
 
 fun getFileExtension(filename: String, default: String = ""): String {

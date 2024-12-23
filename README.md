@@ -271,9 +271,21 @@ Apply a **Gaussian blur** to the image to soften details.
 
 Query Parameters:
 
-| Parameter | Type   | Required | Default | Description                                         |
-|-----------|--------|----------|---------|-----------------------------------------------------|
-| `blur`    | String | No       | `0x0`   | Applies Gaussian blur in the format `radiusxsigma`. |
+| Parameter | Type   | Required | Default | Description                                          |
+|-----------|--------|----------|---------|------------------------------------------------------|
+| `blur`    | Int    | No       | 0       | Simple blur with a single integer, range: `[1, 10]`. |
+| `blur`    | String | No       | 0       | Fine-tune Gaussian blur, format: `{radius}x{sigma}`. |
+
+`blur` format mappings:
+
+| Blur   | Radius | Sigma | Description                                          |
+|--------|--------|-------|------------------------------------------------------|
+| 1      | 1      | 0.5   | Very light blur                                      |
+| 2      | 2      | 1.0   | Light blur                                           |  
+| 3      | 3      | 1.5   | Moderate blur                                        |
+| 4      | 4      | 2.0   | Strong blur                                          |
+| 5      | 5      | 2.5   | Very strong blur                                     |
+| 10     | 10     | 5.0   | Extreme blur (background effects)                    |
 
 - **`radius`**: Defines the area of the blur effect (higher = wider blur).
 - **`sigma`**: Controls the strength of the blur (higher = softer edges).
@@ -282,6 +294,11 @@ Example - Mild blur:
 
 ```bash
 GET http://localhost:8080/img/250x250/properties/1/04c08449e126.png?blur=0x2
+```
+
+Example: Simple, heavy blur
+```bash
+GET http://localhost:8080/img/250x250/properties/1/04c08449e126.png?blur=7
 ```
 
 ![Blurred Image](https://github.com/kennycason/klip/blob/main/images/blur0x2.png?raw=true)
@@ -358,7 +375,6 @@ Example - 10 colors:
 ```bash
 GET http://localhost:8080/img/250x250/properties/1/04c08449e126.png?dither
 ```
-
 
 ---
 

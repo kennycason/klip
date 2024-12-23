@@ -34,15 +34,6 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-core")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json")
 
-    // Image processing
-    implementation("com.twelvemonkeys.imageio:imageio-core:$imageIoVersion")
-    implementation("com.twelvemonkeys.imageio:imageio-bmp:$imageIoVersion")
-    implementation("com.twelvemonkeys.imageio:imageio-jpeg:$imageIoVersion")
-    implementation("com.twelvemonkeys.imageio:imageio-psd:$imageIoVersion")
-    implementation("com.twelvemonkeys.imageio:imageio-tiff:$imageIoVersion")
-    implementation("com.twelvemonkeys.imageio:imageio-webp:$imageIoVersion")
-
-
     // Logging
     implementation("org.apache.logging.log4j:log4j-core:$log4jVersion")
     implementation("org.apache.logging.log4j:log4j-api:$log4jVersion")
