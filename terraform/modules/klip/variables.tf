@@ -17,8 +17,8 @@ variable "region" {
 }
 
 variable "klip_port" {
-  type    = number
-  default = 8080
+  type    = string
+  default = "8080"
 }
 
 variable "klip_s3_bucket" {
@@ -45,6 +45,14 @@ variable "public_subnets" {
 
 variable "private_subnets" {
   type = list(string)
+}
+
+variable "route53_domain" {
+  type = string
+}
+
+variable "route53_zone_id" {
+  type = string
 }
 
 variable "tags" {

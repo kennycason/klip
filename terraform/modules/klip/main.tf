@@ -19,26 +19,18 @@ resource "aws_iam_policy" "ecs_s3_custom_policy" {
   name = "${var.service_name}-${var.stack}-ecs-s3-custom-policy"
 
   policy = jsonencode({
-    Version = "2012-10-17",
-    Statement = concat(
+    Version = "2012-10-17", Statement = concat(
       [
         {
-          Effect = "Allow",
-          Action = ["s3:GetObject", "s3:ListBucket"],
-          Resource = [
-            "arn:aws:s3:::${var.klip_s3_bucket}",
-            "arn:aws:s3:::${var.klip_s3_bucket}/*"
-          ]
+          Effect = "Allow", Action = ["s3:GetObject", "s3:ListBucket"], Resource = [
+          "arn:aws:s3:::${var.klip_s3_bucket}", "arn:aws:s3:::${var.klip_s3_bucket}/*"
+        ]
         }
-      ],
-      var.klip_s3_cache_bucket != var.klip_s3_bucket ? [
+      ], var.klip_s3_cache_bucket != var.klip_s3_bucket ? [
         {
-          Effect = "Allow",
-          Action = ["s3:GetObject", "s3:ListBucket", "s3:PutObject"],
-          Resource = [
-            "arn:aws:s3:::${var.klip_s3_cache_bucket}",
-            "arn:aws:s3:::${var.klip_s3_cache_bucket}/*"
-          ]
+          Effect = "Allow", Action = ["s3:GetObject", "s3:ListBucket", "s3:PutObject"], Resource = [
+          "arn:aws:s3:::${var.klip_s3_cache_bucket}", "arn:aws:s3:::${var.klip_s3_cache_bucket}/*"
+        ]
         }
       ] : []
     )
@@ -50,12 +42,11 @@ resource "aws_iam_role" "ecs_task_execution_role" {
   name = "${var.service_name}-${var.stack}-ecs-task-execution-role"
 
   assume_role_policy = jsonencode({
-    Version = "2012-10-17",
-    Statement = [{
-      Effect    = "Allow",
-      Principal = { Service = "ecs-tasks.amazonaws.com" },
-      Action    = "sts:AssumeRole"
-    }]
+    Version = "2012-10-17", Statement = [
+      {
+        Effect = "Allow", Principal = { Service = "ecs-tasks.amazonaws.com" }, Action = "sts:AssumeRole"
+      }
+    ]
   })
 }
 
@@ -64,14 +55,15 @@ resource "aws_iam_role" "ecs_task_role" {
   name = "${var.service_name}-${var.stack}-ecs-task-role"
 
   assume_role_policy = jsonencode({
-    Version = "2012-10-17",
-    Statement = [{
-      Action = "sts:AssumeRole"
-      Effect = "Allow"
-      Principal = {
-        Service = "ecs-tasks.amazonaws.com"
+    Version = "2012-10-17", Statement = [
+      {
+        Action    = "sts:AssumeRole"
+        Effect    = "Allow"
+        Principal = {
+          Service = "ecs-tasks.amazonaws.com"
+        }
       }
-    }]
+    ]
   })
 }
 
@@ -185,16 +177,15 @@ resource "aws_security_group_rule" "ecs_egress" {
 }
 
 
-
 # ECS Task Definition
 resource "aws_ecs_task_definition" "klip_task" {
   family                   = "${var.service_name}-${var.stack}-task"
   requires_compatibilities = ["FARGATE"]
-  network_mode            = "awsvpc"
-  cpu                     = 1024
-  memory                  = 2048
-  execution_role_arn      = aws_iam_role.ecs_task_execution_role.arn
-  task_role_arn           = aws_iam_role.ecs_task_role.arn
+  network_mode             = "awsvpc"
+  cpu                      = 1024
+  memory                   = 2048
+  execution_role_arn       = aws_iam_role.ecs_task_execution_role.arn
+  task_role_arn            = aws_iam_role.ecs_task_role.arn
 
   container_definitions = jsonencode([
     {
@@ -218,25 +209,29 @@ resource "aws_ecs_task_definition" "klip_task" {
         { name = "KLIP_CACHE_FOLDER", value = var.klip_s3_cache_folder },
       ]
 
-      portMappings = [{
-        containerPort = 8888
-        hostPort      = 8888
-      }]
+      portMappings = [
+        {
+          containerPort = 8888
+          hostPort      = 8888
+        }
+      ]
 
       logConfiguration = {
         logDriver = "awslogs"
-        options = {
+        options   = {
           awslogs-group         = "/ecs/${var.service_name}-${var.stack}"
           awslogs-region        = var.region
           awslogs-stream-prefix = "ecs"
         }
       }
 
-      ulimits = [{
-        name      = "nofile"
-        softLimit = 65536
-        hardLimit = 65536
-      }]
+      ulimits = [
+        {
+          name      = "nofile"
+          softLimit = 65536
+          hardLimit = 65536
+        }
+      ]
     }
   ])
 
@@ -270,13 +265,8 @@ resource "aws_ecs_service" "klip_service" {
   }
 
   depends_on = [
-    aws_lb_listener.http_listener,
-    aws_security_group.alb_sg,
-    aws_security_group.ecs_tasks_sg,
-    aws_security_group_rule.alb_ingress,
-    aws_security_group_rule.alb_egress,
-    aws_security_group_rule.ecs_ingress,
-    aws_security_group_rule.ecs_egress
+    aws_lb_listener.http_listener, aws_security_group.alb_sg, aws_security_group.ecs_tasks_sg, aws_security_group_rule.alb_ingress,
+    aws_security_group_rule.alb_egress, aws_security_group_rule.ecs_ingress, aws_security_group_rule.ecs_egress
   ]
 }
 
@@ -336,5 +326,18 @@ resource "aws_lb_listener" "http_listener" {
   default_action {
     type             = "forward"
     target_group_arn = aws_lb_target_group.klip_tg.arn
+  }
+}
+
+# Route 53 Record
+resource "aws_route53_record" "klip_dns" {
+  zone_id = var.route53_zone_id
+  name    = var.route53_domain
+  type    = "A"
+
+  alias {
+    name                   = aws_lb.klip_lb.dns_name
+    zone_id                = aws_lb.klip_lb.zone_id
+    evaluate_target_health = true
   }
 }

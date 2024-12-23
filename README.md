@@ -298,7 +298,7 @@ Afterward set the `ENV` variables as needed.
 ## Build Docker image
 
 ```shell
-docker build -t klip-prod:latest .
+docker build --platform linux/amd64 -t klip-prod:latest .
 ```
 
 ## Tag and Deploy image
