@@ -1,5 +1,6 @@
 package klip
 
+import klip.Files.getFileExtension
 import strikt.api.expectThat
 import strikt.assertions.isEqualTo
 import kotlin.test.Test
