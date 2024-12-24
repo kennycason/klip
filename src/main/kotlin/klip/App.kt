@@ -21,6 +21,7 @@ import kotlinx.serialization.json.Json
 import org.apache.logging.log4j.core.config.Configurator
 import org.apache.logging.log4j.kotlin.logger
 import org.apache.logging.log4j.Level
+import java.io.File
 
 private val logger = logger("Klip")
 
@@ -28,7 +29,9 @@ data class Env(
     val logLevel: String = System.getenv("KLIP_LOG_LEVEL") ?: "info",
     val http: Http = Http(),
     val aws: Aws = Aws(),
-    val cache: Cache = Cache()
+    val cache: Cache = Cache(),
+    val rulesValidationMode: ValidationMode = readValidationMode(),
+    val rules: List<KlipTransformRule> = loadRules()
 ) {
     data class Http(val port: Int = System.getenv("KLIP_HTTP_PORT")?.toInt() ?: 8080)
 
@@ -44,6 +47,27 @@ data class Env(
         // prefix for cached files
         val cachePrefix: String = System.getenv("KLIP_CACHE_FOLDER").ifBlank { "_cache/" }
     )
+
+    companion object {
+        private fun loadRules(): List<KlipTransformRule> {
+            val rulesEnv = System.getenv("KLIP_TRANSFORM_RULES")
+            val rulesFile = System.getenv("KLIP_RULES_FILE")
+
+            val rulesConfig = when {
+                rulesEnv?.isNotEmpty() == true -> rulesEnv
+                rulesFile?.isNotEmpty() == true -> File(rulesFile).readText()
+                else -> ""
+            }
+            return KlipTransformRules.parseRules(rulesConfig)
+        }
+
+        private fun readValidationMode(): ValidationMode {
+            return System.getenv("KLIP_RULES_VALIDATION_MODE")
+                ?.takeIf { it.isNotBlank() }
+                ?.let { ValidationMode.valueOf(it) }
+                ?: ValidationMode.STRICT
+        }
+    }
 }
 
 fun main() {
@@ -131,7 +155,8 @@ object Routes {
         Counters.incrementRequests()
         val transforms = KlipTransforms.from(parameters, ValidationMode.STRICT,
                 rules = listOf(
-                    ValidationRule( // sample test rule
+                    KlipTransformRule( // sample test rule
+                        name = "dim gte 10",
                         isValid = { it.width > 10 && it.height > 10 },
                         errorMessage = { "Dimensions must be > 10. Got: ${it.width}x${it.height}" },
                         clear = {

@@ -21,7 +21,7 @@ data class KlipTransforms(
 
     fun validate(
         mode: ValidationMode,
-        customRules: List<ValidationRule> = emptyList()
+        customRules: List<KlipTransformRule> = emptyList()
     ): KlipTransforms {
         val errors = mutableListOf<String>()
 
@@ -64,7 +64,7 @@ data class KlipTransforms(
         fun from(
             parameters: Parameters,
             mode: ValidationMode = ValidationMode.STRICT,
-            rules: List<ValidationRule> = emptyList()
+            rules: List<KlipTransformRule> = emptyList()
         ): KlipTransforms {
             // parse dimensions
             val size = parameters["size"] ?: ""

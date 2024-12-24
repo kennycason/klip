@@ -13,7 +13,8 @@ class KlipTransformsRulesTest {
         ).validate(
             mode = ValidationMode.LENIENT,
             customRules = listOf(
-                ValidationRule(
+                KlipTransformRule(
+                    name = "dim gte 10",
                     isValid = { it.width > 10 && it.height > 10 },
                     errorMessage = { "Dimensions must be > 10. Got: ${it.width}x${it.height}" },
                     clear = {
@@ -40,7 +41,8 @@ class KlipTransformsRulesTest {
             transforms.validate(
                 mode = ValidationMode.STRICT,
                 customRules = listOf(
-                    ValidationRule(
+                    KlipTransformRule(
+                        name = "dim gte 10",
                         isValid = { it.width > 10 && it.height > 10 },
                         errorMessage = { "Dimensions must be > 10. Got: ${it.width}x${it.height}" },
                         clear = {
@@ -63,7 +65,8 @@ class KlipTransformsRulesTest {
         ).validate(
             mode = ValidationMode.STRICT,
             customRules = listOf(
-                ValidationRule(
+                KlipTransformRule(
+                    name = "dim gte 10",
                     isValid = { it.width > 10 && it.height > 10 },
                     errorMessage = { "Dimensions must be > 10. Got: ${it.width}x${it.height}" },
                     clear = {
@@ -89,7 +92,8 @@ class KlipTransformsRulesTest {
             transforms.validate(
                 mode = ValidationMode.STRICT,
                 customRules = listOf(
-                    ValidationRule(
+                    KlipTransformRule(
+                        name = "dim gte 10",
                         isValid = { it.width > 10 && it.height > 10 },
                         errorMessage = { "Dimensions must be > 10. Got: ${it.width}x${it.height}" },
                         clear = {
@@ -97,7 +101,8 @@ class KlipTransformsRulesTest {
                             it.height = 1
                         }
                     ),
-                    ValidationRule(
+                    KlipTransformRule(
+                        name = "quality [1, 100]",
                         isValid = { it.quality == null || it.quality in 1..100 },
                         errorMessage = { "Quality must be between 1 and 100. Got: ${it.quality}" },
                         clear = {
