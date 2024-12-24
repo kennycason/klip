@@ -1,116 +1,199 @@
-import klip.*
+package klip
+
+
+import io.ktor.http.parametersOf
 import strikt.api.expectThat
+import strikt.api.expectThrows
 import strikt.assertions.isEqualTo
+import strikt.assertions.message
 import kotlin.test.Test
-import kotlin.test.assertFailsWith
 
 class KlipTransformsTest {
 
     @Test
-    fun `lenient mode applies default values when custom rule fails`() {
-        val transforms = KlipTransforms(
-            path = "test.png", width = 5, height = 5
-        ).validate(
-            mode = ValidationMode.LENIENT,
-            customRules = listOf(
-                ValidationRule(
-                    isValid = { it.width > 10 && it.height > 10 },
-                    errorMessage = { "Dimensions must be > 10. Got: ${it.width}x${it.height}" },
-                    clear = {
-                        it.width = 1
-                        it.height = 1
-                    }
-                )
-            )
+    fun `parse arity-0 parameters (flags)`() {
+        val params = parametersOf(
+            "size" to listOf("20x20"),
+            "flipV" to listOf(),
+            "grayscale" to listOf(),
+            "crop" to listOf(),
+            "flipH" to listOf(),
+            "dither" to listOf()
         )
 
-        // expect width and height to default to 1 in lenient mode
-        expectThat(transforms.width).isEqualTo(1)
-        expectThat(transforms.height).isEqualTo(1)
+        val transforms = KlipTransforms.from(params)
+
+        expectThat(transforms.path).isEqualTo("")
+        expectThat(transforms.width).isEqualTo(20)
+        expectThat(transforms.height).isEqualTo(20)
+        expectThat(transforms.flipV).isEqualTo(true)
+        expectThat(transforms.grayscale).isEqualTo(true)
+        expectThat(transforms.crop).isEqualTo(true)
+        expectThat(transforms.flipH).isEqualTo(true)
+        expectThat(transforms.dither).isEqualTo(true)
     }
 
     @Test
-    fun `strict mode throws error when custom rule fails`() {
-        val transforms = KlipTransforms(
-            path = "test.png", width = 5, height = 5
+    fun `parse arity-1 parameters`() {
+        val params = parametersOf(
+            "size" to listOf("40x50"),
+            "rotate" to listOf("90"),
+            "quality" to listOf("80"),
+            "sharpen" to listOf("1.5"),
+            "colors" to listOf("128"),
+            "blur" to listOf("2x1")
         )
 
-        // capture the exception to verify the message
-        val exception = assertFailsWith<IllegalArgumentException> {
-            transforms.validate(
-                mode = ValidationMode.STRICT,
-                customRules = listOf(
-                    ValidationRule(
-                        isValid = { it.width > 10 && it.height > 10 },
-                        errorMessage = { "Dimensions must be > 10. Got: ${it.width}x${it.height}" },
-                        clear = {
-                            it.width = 1
-                            it.height = 1
-                        }
-                    )
-                )
-            )
+        val transforms = KlipTransforms.from(params)
+
+        expectThat(transforms.path).isEqualTo("")
+        expectThat(transforms.width).isEqualTo(40)
+        expectThat(transforms.height).isEqualTo(50)
+        expectThat(transforms.rotate).isEqualTo(90f)
+        expectThat(transforms.quality).isEqualTo(80)
+        expectThat(transforms.sharpen).isEqualTo(1.5f)
+        expectThat(transforms.colors).isEqualTo(128)
+        expectThat(transforms.blurRadius).isEqualTo(2.0f)
+        expectThat(transforms.blurSigma).isEqualTo(1.0f)
+    }
+
+    @Test
+    fun `parse mixed arity-0 and arity-1 parameters`() {
+        val params = parametersOf(
+            "size" to listOf("100x200"),
+            "flipV" to listOf(),
+            "rotate" to listOf("45"),
+            "sharpen" to listOf("2.0"),
+            "grayscale" to listOf()
+        )
+
+        val transforms = KlipTransforms.from(params)
+
+        expectThat(transforms.path).isEqualTo("")
+        expectThat(transforms.width).isEqualTo(100)
+        expectThat(transforms.height).isEqualTo(200)
+        expectThat(transforms.flipV).isEqualTo(true)
+        expectThat(transforms.rotate).isEqualTo(45f)
+        expectThat(transforms.sharpen).isEqualTo(2.0f)
+        expectThat(transforms.grayscale).isEqualTo(true)
+    }
+
+    @Test
+    fun `parse parameters with defaults`() {
+        val params = parametersOf(
+            "size" to listOf("30x40")
+        )
+
+        val transforms = KlipTransforms.from(params)
+
+        expectThat(transforms.path).isEqualTo("")
+        expectThat(transforms.width).isEqualTo(30)
+        expectThat(transforms.height).isEqualTo(40)
+        expectThat(transforms.grayscale).isEqualTo(false)
+        expectThat(transforms.crop).isEqualTo(false)
+        expectThat(transforms.flipH).isEqualTo(false)
+        expectThat(transforms.flipV).isEqualTo(false)
+        expectThat(transforms.dither).isEqualTo(false)
+        expectThat(transforms.rotate).isEqualTo(null)
+        expectThat(transforms.quality).isEqualTo(null)
+        expectThat(transforms.sharpen).isEqualTo(null)
+        expectThat(transforms.colors).isEqualTo(null)
+        expectThat(transforms.blurRadius).isEqualTo(null)
+        expectThat(transforms.blurSigma).isEqualTo(null)
+    }
+
+    @Test
+    fun `parse size parameter throws exception for missing dimensions`() {
+        val params = parametersOf(
+            "size" to listOf("40x") // Invalid size
+        )
+
+        val exception = expectThrows<IllegalArgumentException> {
+            KlipTransforms.from(params)
+                .validate(ValidationMode.STRICT)
         }
 
-        // verify the error message
-        expectThat(exception.message).isEqualTo("Dimensions must be > 10. Got: 5x5")
+        expectThat(exception.message.subject)
+            .isEqualTo("Invalid dimension format, expected {width}x{height}")
     }
 
     @Test
-    fun `passes custom rule validation`() {
-        val transforms = KlipTransforms(
-            path = "test.png", width = 15, height = 15
-        ).validate(
-            mode = ValidationMode.STRICT,
-            customRules = listOf(
-                ValidationRule(
-                    isValid = { it.width > 10 && it.height > 10 },
-                    errorMessage = { "Dimensions must be > 10. Got: ${it.width}x${it.height}" },
-                    clear = {
-                        it.width = 1
-                        it.height = 1
-                    }
-                )
-            )
+    fun `parse boolean flag variations (true or 1)`() {
+        val params = parametersOf(
+            "size" to listOf("25x25"),
+            "flipV" to listOf("true"),
+            "flipH" to listOf("1"),
+            "grayscale" to listOf("1"),
+            "crop" to listOf("true"),
+            "dither" to listOf("false") // should evaluate to false
         )
 
-        // expect valid dimensions to pass without changes
-        expectThat(transforms.width).isEqualTo(15)
-        expectThat(transforms.height).isEqualTo(15)
+        val transforms = KlipTransforms.from(params)
+
+        expectThat(transforms.width).isEqualTo(25)
+        expectThat(transforms.height).isEqualTo(25)
+        expectThat(transforms.flipV).isEqualTo(true)
+        expectThat(transforms.flipH).isEqualTo(true)
+        expectThat(transforms.grayscale).isEqualTo(true)
+        expectThat(transforms.crop).isEqualTo(true)
+        expectThat(transforms.dither).isEqualTo(false)
     }
 
     @Test
-    fun `multiple rules with different errors in strict mode`() {
-        val transforms = KlipTransforms(
-            path = "test.png", width = 5, height = 5, quality = 120
+    fun `parse invalid rotate throws exception`() {
+        val params = parametersOf(
+            "size" to listOf("50x50"),
+            "rotate" to listOf("invalid") // Invalid rotation value
         )
 
-        val exception = assertFailsWith<IllegalArgumentException> {
-            transforms.validate(
-                mode = ValidationMode.STRICT,
-                customRules = listOf(
-                    ValidationRule(
-                        isValid = { it.width > 10 && it.height > 10 },
-                        errorMessage = { "Dimensions must be > 10. Got: ${it.width}x${it.height}" },
-                        clear = {
-                            it.width = 1
-                            it.height = 1
-                        }
-                    ),
-                    ValidationRule(
-                        isValid = { it.quality == null || it.quality in 1..100 },
-                        errorMessage = { "Quality must be between 1 and 100. Got: ${it.quality}" },
-                        clear = {
-                            it.quality = null
-                        }
-                    )
-                )
-            )
+        val exception = expectThrows<IllegalArgumentException> {
+            KlipTransforms.from(params)
+                .validate(ValidationMode.STRICT)
         }
 
-        expectThat(exception.message).isEqualTo(
-//            "Dimensions must be > 10. Got: 5x5, Quality must be between 1 and 100. Got: 120"
-            "Quality must be between 1 and 100. Got: 120, Dimensions must be > 10. Got: 5x5, Quality must be between 1 and 100. Got: 120"
+        expectThat(exception.message.subject)
+            .isEqualTo("For input string: \"invalid\"")
+    }
+
+    @Test
+    fun `parse invalid quality throws exception`() {
+        val params = parametersOf(
+            "size" to listOf("50x50"),
+            "quality" to listOf("invalid") // Invalid quality value
         )
+
+        val exception = expectThrows<IllegalArgumentException> {
+            KlipTransforms.from(params)
+                .validate(ValidationMode.STRICT)
+        }
+
+        expectThat(exception.message.subject)
+            .isEqualTo("For input string: \"invalid\"")
+    }
+
+    @Test
+    fun `parse invalid blur lenient, does not throws exception`() {
+        val params = parametersOf(
+            "size" to listOf("50x50"),
+            "blur" to listOf("invalid") // Invalid blur format
+        )
+
+        val transforms = KlipTransforms.from(params, ValidationMode.LENIENT)
+
+        // expect blur radius and sigma to default to null due to parsing error
+        expectThat(transforms.blurRadius).isEqualTo(null)
+        expectThat(transforms.blurSigma).isEqualTo(null)
+    }
+
+    @Test
+    fun `parse path with multiple segments`() {
+        val params = parametersOf(
+            "size" to listOf("50x50"),
+            "path" to listOf("folder/subfolder/image.png")
+        )
+
+        val transforms = KlipTransforms.from(params)
+
+        expectThat(transforms.path).isEqualTo("folder/subfolder/image.png")
     }
 }

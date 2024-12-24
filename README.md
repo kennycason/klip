@@ -430,6 +430,45 @@ Response:
 
 ---
 
+
+## Status Check (Admin only: Coming Soon)
+
+```
+GET /admin/status
+```
+
+Get detailed status information about Klip
+
+Response:
+
+```
+{
+    "totalRequests": 4182,
+    "cacheHits": 3891,
+    "cacheHitRate": 0.93041607
+}
+```
+
+---
+
+
+
+
+
+## Errors
+
+```shell
+GET /img/10x9/properties/1/04c08449e1261fedc2eb1a6a99245531.png
+```
+
+422 - Unprocessable Entity
+```json
+{
+    "error": "Dimensions must be > 10. Got: 10x9"
+}
+```
+
+
 ## Installation
 
 ### Prerequisites
@@ -516,3 +555,4 @@ terraform apply
 - Whitelist filters to prevent abuse
 - Configurable Secret Key to protect admin endpoints (clear cache, get stats)
 - Migrate to Kotlin Native after (aws s3 client is for kotlin jvm)
+- Configurable backend storage (S3 vs File)

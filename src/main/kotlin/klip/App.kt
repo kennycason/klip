@@ -74,6 +74,12 @@ fun configureService(app: Application) {
                 mapOf("error" to (cause.message ?: "Invalid input"))
             )
         }
+        exception<NumberFormatException> { call, cause ->
+            call.respond(
+                HttpStatusCode.UnprocessableEntity,
+                mapOf("error" to (cause.message ?: "Invalid input"))
+            )
+        }
     }
 }
 
@@ -123,9 +129,8 @@ object Routes {
 
     private suspend fun ApplicationCall.handleImageRequest(s3Client: S3Client, env: Env) {
         Counters.incrementRequests()
-        val transforms = KlipTransforms.from(parameters)
-            .validate(ValidationMode.STRICT,
-                customRules = listOf(
+        val transforms = KlipTransforms.from(parameters, ValidationMode.STRICT,
+                rules = listOf(
                     ValidationRule( // sample test rule
                         isValid = { it.width > 10 && it.height > 10 },
                         errorMessage = { "Dimensions must be > 10. Got: ${it.width}x${it.height}" },

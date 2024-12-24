@@ -48,54 +48,53 @@ data class KlipTransforms(
     }
 
     private fun validateBaseRules(errors: MutableList<String>, mode: ValidationMode) {
-        if (!Rules.dimensionRule.isValid(this)) {
+        if (!KlipTransformRules.dimensionsGteZero.isValid(this)) {
             if (mode == ValidationMode.LENIENT) { // Default to minimum valid size
                 width = 1
                 height = 1
             }
-            errors.add(Rules.dimensionRule.errorMessage(this))
-        }
-
-        if (!Rules.qualityRule.isValid(this)) {
-            if (mode == ValidationMode.LENIENT) quality = null
-            errors.add(Rules.qualityRule.errorMessage(this))
-        }
-
-        if (!Rules.blurRule.isValid(this)) {
-            if (mode == ValidationMode.LENIENT) {
-                blurRadius = null
-                blurSigma = null
-            }
-            errors.add(Rules.blurRule.errorMessage(this))
+            errors.add(KlipTransformRules.dimensionsGteZero.errorMessage(this))
         }
     }
 
     companion object {
-        fun from(parameters: Parameters): KlipTransforms {
+        /**
+         * Create KlipTransforms from parameters with optional rules and validation mode.
+         */
+        fun from(
+            parameters: Parameters,
+            mode: ValidationMode = ValidationMode.STRICT,
+            rules: List<ValidationRule> = emptyList()
+        ): KlipTransforms {
+            // parse dimensions
             val size = parameters["size"] ?: ""
             val match = Regex("(\\d+)x(\\d+)").matchEntire(size)
             val width = match?.groups?.get(1)?.value?.toIntOrNull()
             val height = match?.groups?.get(2)?.value?.toIntOrNull()
+            if (width == null || height == null) {
+                throw IllegalArgumentException("Invalid dimension format, expected {width}x{height}")
+            }
 
             val path = parameters.getAll("path")?.joinToString("/") ?: ""
 
+            // parse flags (boolean parameters)
             val grayscale = isParamTrue("grayscale", parameters)
             val crop = isParamTrue("crop", parameters)
             val flipH = isParamTrue("flipH", parameters)
             val flipV = isParamTrue("flipV", parameters)
             val dither = isParamTrue("dither", parameters)
 
-            val rotate = parameters["rotate"]?.toFloatOrNull()
-            val quality = parameters["quality"]?.toIntOrNull()
-            val sharpen = parameters["sharpen"]?.toFloatOrNull()
-            val colors = parameters["colors"]?.toIntOrNull()
+            // parse numeric values with strict validation
+            val rotate = parseFloat("rotate", parameters, mode)
+            val quality = parseInt("quality", parameters, mode)
+            val sharpen = parseFloat("sharpen", parameters, mode)
+            val colors = parseInt("colors", parameters, mode)
 
+            // parse blur (supports "radius" or "{radius}x{sigma}")
             val blur = parameters["blur"]
-            val (blurRadius, blurSigma) = parseBlur(blur)
+            val (blurRadius, blurSigma) = parseBlur(blur, mode)
 
-            requireNotNull(width) { "Missing width in size parameter." }
-            requireNotNull(height) { "Missing height in size parameter." }
-
+            // create and validate transforms
             return KlipTransforms(
                 path = path,
                 width = width,
@@ -111,70 +110,65 @@ data class KlipTransforms(
                 colors = colors,
                 blurRadius = blurRadius,
                 blurSigma = blurSigma
-            )
+            ).validate(mode, rules)
         }
 
-        private fun parseBlur(blur: String?): Pair<Float?, Float?> {
-            if (blur.isNullOrEmpty()) return null to null
-            val parts = blur.split("x")
-            return when (parts.size) {
-                2 -> parts[0].toFloatOrNull() to parts[1].toFloatOrNull()
-                1 -> {
-                    val radius = parts[0].toFloatOrNull()
-                    radius?.let { it to it * 0.5f } ?: (null to null)
-                }
-
-                else -> null to null
+        /**
+         * Helper to parse float values with strict or lenient handling.
+         */
+        private fun parseFloat(key: String, parameters: Parameters, mode: ValidationMode): Float? {
+            val value = parameters[key]
+            return try {
+                value?.toFloat()
+            } catch (e: NumberFormatException) {
+                if (mode == ValidationMode.STRICT) throw e
+                null // nullify in lenient mode
             }
         }
 
+        /**
+         * pelper to parse integer values with strict or lenient handling.
+         */
+        private fun parseInt(key: String, parameters: Parameters, mode: ValidationMode): Int? {
+            val value = parameters[key]
+            return try {
+                value?.toInt()
+            } catch (e: NumberFormatException) {
+                if (mode == ValidationMode.STRICT) throw e
+                null // nullify in lenient mode
+            }
+        }
+
+        /**
+         * parse blur input (supports single and compound formats) with mode handling.
+         */
+        private fun parseBlur(blur: String?, mode: ValidationMode): Pair<Float?, Float?> {
+            if (blur.isNullOrEmpty()) return null to null
+            val parts = blur.split("x")
+
+            return try {
+                when (parts.size) {
+                    2 -> parts[0].toFloat() to parts[1].toFloat()
+                    1 -> {
+                        val radius = parts[0].toFloat()
+                        radius.let { it to it * 0.5f }
+                    }
+
+                    else -> null to null
+                }
+            } catch (e: NumberFormatException) {
+                if (mode == ValidationMode.STRICT) throw e
+                null to null // nullify in lenient mode
+            }
+        }
+
+        /**
+         * helper for boolean flags.
+         */
         private fun isParamTrue(key: String, parameters: Parameters): Boolean {
             val value = parameters[key]
-            return (key in parameters && parameters[key] == null) ||
-                (value == "1" || value == "true")
+            return (key in parameters && parameters[key] == null) || // 0-arity parameters like ?flipV
+                (value == "1" || value == "true")                   // 1-arity parameters like ?flipV=1 or ?flipV=true
         }
     }
-}
-
-enum class ValidationMode {
-    STRICT,  // throw errors on violations
-    LENIENT  // nullify or reset invalid fields
-}
-
-data class ValidationRule(
-    val isValid: (t: KlipTransforms) -> Boolean,
-    val errorMessage: (t: KlipTransforms) -> String,
-    val clear: (t: KlipTransforms) -> Unit
-)
-
-object Rules {
-
-    val dimensionRule = ValidationRule(
-        isValid = { it.width > 0 && it.height > 0 },
-        errorMessage = { "Dimensions must be > 0. Got: ${it.width}x${it.height}" },
-        clear = {
-            it.width = 1
-            it.height = 1
-        }
-    )
-
-    val qualityRule = ValidationRule(
-        isValid = { it.quality == null || (it.quality in 1..100) },
-        errorMessage = { "Quality must be between 1 and 100. Got: ${it.quality}" },
-        clear = {
-            it.quality = null
-        }
-    )
-
-    val blurRule = ValidationRule(
-        isValid = {
-            (it.blurRadius == null || it.blurRadius!! >= 0) &&
-                (it.blurSigma == null || it.blurSigma!! >= 0)
-        },
-        errorMessage = { "Blur must have radius >= 0 and sigma >= 0. Got: ${it.blurRadius}x${it.blurSigma}" },
-        clear = {
-            it.blurRadius = null
-            it.blurSigma = null
-        }
-    )
 }
