@@ -46,16 +46,6 @@ data class Env(
     )
 }
 
-@Serializable
-data class KlipHealth(val status: String = "UP")
-
-data class KlipImage(
-    val data: ByteArray,
-    val contentType: ContentType
-) {
-    val extension = contentType.contentSubtype
-}
-
 fun main() {
     logger.info { "Starting Klip" }
 
@@ -114,6 +104,16 @@ object Routes {
             get("/version") {
                 call.respondText("1.0.0", ContentType.Text.Plain)
             }
+
+            get("/admin/status") {
+                call.respond(
+                    KlipStatus(
+                        totalRequests = Counters.getRequests(),
+                        cacheHits = Counters.getCacheHits(),
+                        cacheHitRate = Counters.getCacheHitRate()
+                    )
+                )
+            }
         }
 
         monitor.subscribe(ApplicationStopped) {
@@ -122,6 +122,7 @@ object Routes {
     }
 
     private suspend fun ApplicationCall.handleImageRequest(s3Client: S3Client, env: Env) {
+        Counters.incrementRequests()
         val transforms = KlipTransforms.from(parameters)
             .validate(ValidationMode.STRICT,
                 customRules = listOf(
@@ -144,6 +145,7 @@ object Routes {
             val cachedImage = checkCache(s3Client, env, cacheKey)
             if (cachedImage != null) {
                 logger.info("Cache hit: $cacheKey")
+                Counters.incrementCacheHits()
                 response.headers.append("Content-Type", cachedImage.contentType.toString())
                 respondBytes(cachedImage.data)
                 return
@@ -171,6 +173,7 @@ object Routes {
     }
 
     private suspend fun ApplicationCall.handleRawImageRequest(s3Client: S3Client, env: Env) {
+        Counters.incrementRequests()
         val path = parameters.getAll("path")?.joinToString("/") ?: ""
         val s3Object = S3.readFile(s3Client, env.aws.s3Bucket, path)
         if (s3Object != null) {
@@ -180,4 +183,23 @@ object Routes {
             respond(HttpStatusCode.NotFound, "File not found: $path")
         }
     }
+}
+
+@Serializable
+data class KlipHealth(
+    val status: String = "UP"
+)
+
+@Serializable
+data class KlipStatus(
+    val totalRequests: Int,
+    val cacheHits: Int,
+    val cacheHitRate: Float
+)
+
+data class KlipImage(
+    val data: ByteArray,
+    val contentType: ContentType
+) {
+    val extension = contentType.contentSubtype
 }
