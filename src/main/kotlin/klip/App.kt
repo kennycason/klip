@@ -9,6 +9,7 @@ import io.ktor.server.application.*
 import io.ktor.server.cio.*
 import io.ktor.server.engine.*
 import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.server.plugins.statuspages.StatusPages
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import klip.Routes.setup
@@ -64,14 +65,26 @@ fun main() {
     logger.info(env)
 
     embeddedServer(CIO, port = env.http.port) {
-        install(ContentNegotiation) {
-            json(Json {
-                prettyPrint = true
-                encodeDefaults = true
-            })
-        }
+        configureService(this)
         setup(env)
     }.start(wait = true)
+}
+
+fun configureService(app: Application) {
+    app.install(ContentNegotiation) {
+        json(Json {
+            prettyPrint = true
+            encodeDefaults = true
+        })
+    }
+    app.install(StatusPages) {
+        exception<IllegalArgumentException> { call, cause ->
+            call.respond(
+                HttpStatusCode.UnprocessableEntity,
+                mapOf("error" to (cause.message ?: "Invalid input"))
+            )
+        }
+    }
 }
 
 object Routes {
@@ -110,9 +123,20 @@ object Routes {
 
     private suspend fun ApplicationCall.handleImageRequest(s3Client: S3Client, env: Env) {
         val transforms = KlipTransforms.from(parameters)
+            .validate(ValidationMode.STRICT,
+                customRules = listOf(
+                    ValidationRule( // sample test rule
+                        isValid = { it.width > 10 && it.height > 10 },
+                        errorMessage = { "Dimensions must be > 10. Got: ${it.width}x${it.height}" },
+                        clear = {
+                            it.width = 1
+                            it.height = 1
+                        }
+                    )
+                )
+            )
 
-        val cacheKey =
-            generateCacheKey(transforms)
+        val cacheKey = generateCacheKey(transforms)
         logger.info("Cache Key: $cacheKey")
 
         // check cache
@@ -156,5 +180,4 @@ object Routes {
             respond(HttpStatusCode.NotFound, "File not found: $path")
         }
     }
-
 }

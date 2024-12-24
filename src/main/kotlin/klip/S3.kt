@@ -82,15 +82,15 @@ object S3 {
 
         // only include active transforms in key
         val params = mutableListOf("${t.width}x${t.height}")
-        if (t.blurRadius != null && t.blurSigma != null) params.add("b${ftos(t.blurRadius)}x${ftos(t.blurSigma)}")
+        if (t.blurRadius != null && t.blurSigma != null) params.add("b${ftos(t.blurRadius!!)}x${ftos(t.blurSigma!!)}")
         if (t.crop) params.add("c1")
         if (t.colors != null) params.add("c${t.colors}") // colors can never be 1, and will not collide with c1
         if (t.dither) params.add("d1")
         if (t.grayscale) params.add("g1")
         if (t.flipH) params.add("h1")
         if (t.quality != null) params.add("q${t.quality}")
-        if (t.rotate != null && t.rotate != 0f) params.add("r${ftos(t.rotate)}")
-        if (t.sharpen != null) params.add("s${ftos(t.sharpen)}")
+        if (t.rotate != null && t.rotate != 0f) params.add("r${ftos(t.rotate!!)}")
+        if (t.sharpen != null) params.add("s${ftos(t.sharpen!!)}")
         if (t.flipV) params.add("v1")
 
         return "${baseName}-${params.joinToString("")}.$extension"

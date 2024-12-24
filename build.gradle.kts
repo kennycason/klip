@@ -22,6 +22,7 @@ dependencies {
     // Ktor Server Core and CIO Engine
     implementation("io.ktor:ktor-server-core:$ktorVersion")
     implementation("io.ktor:ktor-server-cio:$ktorVersion")
+    implementation("io.ktor:ktor-server-status-pages:$ktorVersion")
 
     // Ktor Serialization
     implementation("io.ktor:ktor-server-content-negotiation:$ktorVersion")
