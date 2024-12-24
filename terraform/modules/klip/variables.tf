@@ -30,7 +30,6 @@ variable "klip_s3_bucket" {
   type = string
 }
 
-
 variable "klip_s3_cache_enabled" {
   type = string
 }

@@ -24,6 +24,8 @@ import org.apache.logging.log4j.core.config.Configurator
 import org.apache.logging.log4j.kotlin.logger
 import org.apache.logging.log4j.Level
 import java.io.File
+import java.math.BigDecimal
+import java.math.RoundingMode
 import java.util.UUID
 
 private val logger = logger("Klip")
@@ -227,24 +229,34 @@ object S3 {
         s3Client.putObject(request)
     }
 
+    /**
+     * filter keys are stored in alphabetic order.
+     */
     fun generateCacheKey(t: KlipTransforms): String {
         val baseName = t.path.substringBeforeLast('.') // remove the extension
         val extension = getFileExtension(t.path)
 
         // only include active transforms in key
         val params = mutableListOf("${t.width}x${t.height}")
-        if (t.grayscale) params.add("g1")
+        if (t.blurRadius != null && t.blurSigma != null) params.add("b${ftos(t.blurRadius)}x${ftos(t.blurSigma)}")
         if (t.crop) params.add("c1")
-        if (t.rotate != null && t.rotate != 0f) params.add("r${t.rotate.toInt()}")
-        if (t.flipH) params.add("h1")
-        if (t.flipV) params.add("v1")
+        if (t.colors != null) params.add("c${t.colors}") // colors can never be 1, and will not collide with c1
         if (t.dither) params.add("d1")
+        if (t.grayscale) params.add("g1")
+        if (t.flipH) params.add("h1")
         if (t.quality != null) params.add("q${t.quality}")
-        if (t.sharpen != null) params.add("sharpen${t.quality}")
-        if (t.colors != null) params.add("colors${t.quality}")
-        if (t.blurRadius != null && t.blurSigma != null) params.add("blur${t.blurRadius}x${t.blurSigma}")
+        if (t.rotate != null && t.rotate != 0f) params.add("r${ftos(t.rotate)}")
+        if (t.sharpen != null) params.add("s${ftos(t.sharpen)}")
+        if (t.flipV) params.add("v1")
 
         return "${baseName}-${params.joinToString("")}.$extension"
+    }
+
+    private fun ftos(v: Float, digits: Int = 2): String {
+        return BigDecimal(v.toString())
+            .setScale(digits, RoundingMode.HALF_UP)
+            .stripTrailingZeros()
+            .toPlainString()
     }
 }
 
@@ -261,8 +273,8 @@ data class KlipTransforms(
     val quality: Int? = null,
     val sharpen: Float? = null,
     val colors: Int? = null,
-    val blurRadius: Double? = null,
-    val blurSigma: Double? = null
+    val blurRadius: Float? = null,
+    val blurSigma: Float? = null
 ) {
 
     fun verify() {
@@ -325,15 +337,15 @@ data class KlipTransforms(
         /**
          * Parse blur input (supports single and compound formats).
          */
-        private fun parseBlur(blur: String?): Pair<Double?, Double?> {
+        private fun parseBlur(blur: String?): Pair<Float?, Float?> {
             if (blur.isNullOrEmpty()) return null to null
             val parts = blur.split("x")
 
             return when (parts.size) {
-                2 -> parts[0].toDoubleOrNull() to parts[1].toDoubleOrNull()
+                2 -> parts[0].toFloatOrNull() to parts[1].toFloatOrNull()
                 1 -> {
-                    val radius = parts[0].toDoubleOrNull()
-                    radius?.let { Pair(it, it * 0.5) } ?: (null to null) // Default to nulls if parsing fails
+                    val radius = parts[0].toFloatOrNull()
+                    radius?.let { Pair(it, it * 0.5f) } ?: (null to null) // Default to nulls if parsing fails
                 }
                 else -> null to null
             }
