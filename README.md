@@ -509,3 +509,10 @@ cd terraform/stacks/prod/
 terraform init
 terraform apply
 ```
+
+
+# Roadmap
+
+- Whitelist filters to prevent abuse
+- Configurable Secret Key to protect admin endpoints (clear cache, get stats)
+- Migrate to Kotlin Native after (aws s3 client is for kotlin jvm)
