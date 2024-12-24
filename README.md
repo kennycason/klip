@@ -454,6 +454,117 @@ Response:
 
 
 
+## Klip Rules Configuration
+
+Klip allows you to configure transformation rules for image processing using either **environment variables** or a **rules file**. These rules enforce constraints on transformations, ensuring only allowed operations are applied.
+
+---
+
+### Environment Variable Configuration
+
+Set rules using the `KLIP_TRANSFORM_RULES` environment variable as a **semicolon-separated string**:
+
+
+Example:
+
+```bash
+KLIP_TRANSFORM_RULES="+flipV;-flipH;dim 32x32 64x64 128x128;blur 1 2 3 4;quality 75 85 90;rotate 0 90 180"
+```
+
+---
+
+### File-Based Configuration
+
+Alternatively, rules can be stored in a **rules.txt** file and referenced via the `KLIP_RULES_FILE` environment variable.
+
+Example:
+```bash
+KLIP_RULES_FILE=/app/config/rules.txt
+```
+
+### rules.txt
+```
++flipV
+-flipH
+dim 32x32 64x64 128x128
+blur 1 2 3 4
+quality 75 85 90
+rotate 0 90 180
+```
+
+---
+
+### Rule Syntax
+
+| Rule               | Description                                 | Example                   |
+|--------------------|---------------------------------------------|---------------------------|
+| `+flipV`           | Allow vertical flipping.                    | `+flipV`                  |
+| `-flipV`           | Disallow vertical flipping.                 | `-flipV`                  |
+| `+flipH`           | Allow horizontal flipping.                  | `+flipH`                  |
+| `-flipH`           | Disallow horizontal flipping.               | `-flipH`                  |
+| `+grayscale`       | Allow grayscale conversion.                 | `+grayscale`              |
+| `-grayscale`       | Disallow grayscale conversion.              | `-grayscale`              |
+| `dim {WxH}`        | Allow specific dimensions (width x height). | `dim 32x32 64x64 128x128` |
+| `blur {values}`    | Allow specific blur radii.                  | `blur 1 2 3 4`            |
+| `quality {values}` | Allow specific quality settings.            | `quality 75 85 90`        |
+| `rotate {values}`  | Allow specific rotation angles in degrees.  | `rotate 0 90 180`         |
+| `sharpen {values}` | Allow specific sharpen values.              | `sharpen 0.5 1.0 2.0`     |
+| `colors {values}`  | Allow specific color palette sizes.         | `colors 16 32 64 128`     |
+
+---
+
+### Behavior Modes
+
+Klip supports **two validation modes** for rules:
+
+- **STRICT** - Throws an error when a rule is violated (default).
+- **LENIENT** - Resets invalid values to defaults (e.g., nullifies transformations).
+
+---
+
+### Usage in Docker
+
+Environment Variable Example:
+```bash
+docker run -e KLIP_TRANSFORM_RULES="+flipV;-flipH;dim 32x32 64x64 128x128" klip-app
+```
+
+File Example:
+```bash
+docker run -e KLIP_RULES_FILE=/config/rules.txt -v /local/config:/config klip-app
+```
+
+---
+
+## **6. Testing Rules Locally**
+
+To test rules without deployment:
+
+1. Create a **rules.txt** file:
+   ```
+   +flipV
+   -flipH
+   dim 32x32 64x64 128x128
+   blur 1 2 3 4
+   quality 75 85 90
+   rotate 0 90 180
+   ```
+
+Use the following shell script:
+
+```bash
+KLIP_RULES_FILE=./klip_rules.txt ./gradlew run
+```
+
+Alternatively, set directly as an environment variable:
+
+```bash
+KLIP_TRANSFORM_RULES="+flipV;-flipH;dim 32x32 64x64 128x128" ./gradlew run
+```
+
+---
+
+
 
 ## Errors
 
