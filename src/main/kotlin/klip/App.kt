@@ -153,19 +153,7 @@ object Routes {
 
     private suspend fun ApplicationCall.handleImageRequest(s3Client: S3Client, env: Env) {
         Counters.incrementRequests()
-        val transforms = KlipTransforms.from(parameters, ValidationMode.STRICT,
-                rules = listOf(
-                    KlipTransformRule( // sample test rule
-                        name = "dim gte 10",
-                        isValid = { it.width > 10 && it.height > 10 },
-                        errorMessage = { "Dimensions must be > 10. Got: ${it.width}x${it.height}" },
-                        clear = {
-                            it.width = 1
-                            it.height = 1
-                        }
-                    )
-                )
-            )
+        val transforms = KlipTransforms.from(parameters, ValidationMode.STRICT, env.rules)
 
         val cacheKey = generateCacheKey(transforms)
         logger.info("Cache Key: $cacheKey")
