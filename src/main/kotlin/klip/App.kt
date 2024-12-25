@@ -50,7 +50,7 @@ data class Env(
 
     companion object {
         private fun loadRules(): List<KlipTransformRule> {
-            val rulesEnv = System.getenv("KLIP_TRANSFORM_RULES")
+            val rulesEnv = System.getenv("KLIP_RULES")
             val rulesFile = System.getenv("KLIP_RULES_FILE")
 
             val rulesConfig = when {

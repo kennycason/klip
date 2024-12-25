@@ -13,18 +13,18 @@ It supports caching, resizing, cropping, grayscale filters, and rotation via HTT
 
 ## Environment Configuration (Env)
 
-| Section   | Variable                     | Type    | Default                    | Required | Description                                                                   |
-|-----------|------------------------------|---------|----------------------------|----------|-------------------------------------------------------------------------------|
-| **LOG**   | `KLIP_LOG_LEVEL`             | Enum    | `INFO`                     | No       | `TRACE`, `INFO`, `DEBUG`, `WARN`, `ERROR`                                     |
-| **HTTP**  | `KLIP_HTTP_PORT`             | Int     | `8080`                     | No       | The HTTP port the server listens on.                                          |
-| **AWS**   | `KLIP_AWS_REGION`            | String  | -                          | Yes      | AWS region for S3 bucket (e.g., `us-west-2`).                                 |
-| **AWS**   | `KLIP_S3_BUCKET`             | String  | -                          | Yes      | The S3 bucket name where source images are stored.                            |
-| **Cache** | `KLIP_CACHE_ENABLED`         | Boolean | True                       | No       | If false, disable image cache.                                                |
-| **Cache** | `KLIP_CACHE_BUCKET`          | String  | *Same as `KLIP_S3_BUCKET`* | No       | Used if using different S3 bucket for caching.                                |
-| **Cache** | `KLIP_CACHE_FOLDER`          | String  | `_cache/`                  | No       | Prefix for cached files. Stored within the cache bucket.                      |
+| Section   | Variable           | Type    | Default                    | Required | Description                                                                   |
+|-----------|--------------------|---------|----------------------------|----------|-------------------------------------------------------------------------------|
+| **LOG**   | `KLIP_LOG_LEVEL`   | Enum    | `INFO`                     | No       | `TRACE`, `INFO`, `DEBUG`, `WARN`, `ERROR`                                     |
+| **HTTP**  | `KLIP_HTTP_PORT`   | Int     | `8080`                     | No       | The HTTP port the server listens on.                                          |
+| **AWS**   | `KLIP_AWS_REGION`  | String  | -                          | Yes      | AWS region for S3 bucket (e.g., `us-west-2`).                                 |
+| **AWS**   | `KLIP_S3_BUCKET`   | String  | -                          | Yes      | The S3 bucket name where source images are stored.                            |
+| **Cache** | `KLIP_CACHE_ENABLED` | Boolean | True                       | No       | If false, disable image cache.                                                |
+| **Cache** | `KLIP_CACHE_BUCKET` | String  | *Same as `KLIP_S3_BUCKET`* | No       | Used if using different S3 bucket for caching.                                |
+| **Cache** | `KLIP_CACHE_FOLDER` | String  | `_cache/`                  | No       | Prefix for cached files. Stored within the cache bucket.                      |
 | **Rules** | `KLIP_RULES_VALIDATION_MODE` | Enum    | `STRICT`                   | No       | `LENIENT` ignore errors, `STRICT` throw exceptions on errors.                 |
-| **Rules** | `KLIP_TRANSFORM_RULES`       | String  | "" (empty)                 | No       | Inline rule definitions separated by ; (e.g., +flipV;-flipH;dim 32x32 64x64). |
-| **Rules** | `KLIP_RULES_FILE`            | String  | -                          | No       | Path to a rules file with one rule per line. Overrides KLIP_TRANSFORM_RULES.  |
+| **Rules** | `KLIP_RULES`       | String  | "" (empty)                 | No       | Inline rule definitions separated by ; (e.g., +flipV;-flipH;dim 32x32 64x64). |
+| **Rules** | `KLIP_RULES_FILE`  | String  | -                          | No       | Path to a rules file with one rule per line. Overrides KLIP_RULES.  |
 
 ---
 
@@ -39,7 +39,7 @@ KLIP_CACHE_ENABLED=true \
 KLIP_CACHE_BUCKET=cdn.klip.com \
 KLIP_CACHE_FOLDER=.cache/ \
 KLIP_RULES_VALIDATION_MODE=STRICT \
-KLIP_TRANSFORM_RULES="+flipV;-flipH;dim 32x32 64x64 256x256" \
+KLIP_RULES="+flipV;-flipH;dim 32x32 64x64 256x256" \
 java -jar build/libs/klip-all.jar
 ```
 
@@ -465,12 +465,12 @@ constraints on transformations, ensuring only allowed operations are applied.
 
 ### Environment Variable Configuration
 
-Set rules using the `KLIP_TRANSFORM_RULES` environment variable as a **semicolon-separated string**:
+Set rules using the `KLIP_RULES` environment variable as a **semicolon-separated string**:
 
 Example:
 
 ```bash
-KLIP_TRANSFORM_RULES="+flipV;-flipH;dim 32x32 64x64 128x128;blur 1 2 3 4;quality 75 85 90;rotate 0 90 180"
+KLIP_RULES="+flipV;-flipH;dim 32x32 64x64 128x128;blur 1 2 3 4;quality 75 85 90;rotate 0 90 180"
 ```
 
 ---
@@ -531,7 +531,7 @@ Klip supports **two validation modes** for rules:
 Environment Variable Example:
 
 ```bash
-docker run -e KLIP_TRANSFORM_RULES="+flipV;-flipH;dim 32x32 64x64 128x128" klip-app
+docker run -e KLIP_RULES="+flipV;-flipH;dim 32x32 64x64 128x128" klip-app
 ```
 
 File Example:
@@ -565,7 +565,7 @@ KLIP_RULES_FILE=./klip_rules.txt ./gradlew run
 Alternatively, set directly as an environment variable:
 
 ```bash
-KLIP_TRANSFORM_RULES="+flipV;-flipH;dim 32x32 64x64 128x128" ./gradlew run
+KLIP_RULES="+flipV;-flipH;dim 32x32 64x64 128x128" ./gradlew run
 ```
 
 ---

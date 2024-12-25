@@ -1,0 +1,31 @@
+# Allowed dimensions for images (popular sizes)
+dim 32x32 64x64 128x128 256x256 512x512 1024x768 1920x1080 3840x2160
+
+# Quality levels - limits to prevent abuse
+quality 25 50 75 100
+
+# Allowed color palettes for optimization
+colors 16 32 64 128 256
+
+# Rotation - only 90-degree increments allowed
+rotate 0 90 180 270
+
+# Sharpen - subtle sharpening effects allowed
+sharpen 0.5 1.0 2.0
+
+# Blur - only light blurs allowed for thumbnails
+# blurRadius 1 2 3
+# blurSigma 0.5 1.0 1.5
+
+# Allow grayscale transformations
++grayscale
+
+# Disable cropping to prevent destructive edits
+-crop
+
+# Disable horizontal and vertical flipping
+-flipH
+-flipV
+
+# Disable dithering to preserve original image quality
+-dither

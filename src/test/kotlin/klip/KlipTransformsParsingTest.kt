@@ -3,6 +3,7 @@ package klip
 import io.ktor.http.parametersOf
 import strikt.api.expectThat
 import strikt.assertions.*
+import java.io.File
 import kotlin.test.Test
 import kotlin.test.assertFailsWith
 
@@ -214,5 +215,32 @@ class KlipTransformsParsingTest {
             get { grayscale }.isFalse()
             get { dither }.isFalse()
         }
+    }
+
+    @Test
+    fun `validate rules parsed from file and applied correctly`() {
+        val rulesFile = File("src/test/resources/rules_file_test.txt")
+        val rules = KlipTransformRules.parseRules(rulesFile.readText())
+
+        val params = parametersOf(
+            "size" to listOf("128x128"),
+            "quality" to listOf("50"),
+            "rotate" to listOf("45"),
+//            "blur" to listOf("5x2.5"),
+            "grayscale" to listOf("1"),
+            "flipH" to listOf("1"), // disallowed
+            "dither" to listOf("1") // disallowed
+        )
+
+        val exception = assertFailsWith<IllegalArgumentException> {
+            KlipTransforms.from(
+                parameters = params,
+                mode = ValidationMode.STRICT,
+                rules = rules
+            )
+        }
+
+        expectThat(exception.message?.contains("Horizontal flip is not allowed.")).isTrue()
+        expectThat(exception.message?.contains("Dither is not allowed.")).isTrue()
     }
 }

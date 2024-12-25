@@ -136,60 +136,65 @@ object KlipTransformRules {
         val allowedRotate = mutableSetOf<Float>()
         val allowedSharpen = mutableSetOf<Float>()
 
-        rulesConfig.split(";").forEach { rule ->
-            val trimmedRule = rule.trim()
-            when {
-                // allow or disallow boolean features
-                trimmedRule == "+flipV" -> rules.add(allowedFlipV(true))
-                trimmedRule == "-flipV" -> rules.add(allowedFlipV(false))
-                trimmedRule == "+flipH" -> rules.add(allowedFlipH(true))
-                trimmedRule == "-flipH" -> rules.add(allowedFlipH(false))
-                trimmedRule == "+crop" -> rules.add(allowedCrop(true))
-                trimmedRule == "-crop" -> rules.add(allowedCrop(false))
-                trimmedRule == "+grayscale" -> rules.add(allowedGrayscale(true))
-                trimmedRule == "-grayscale" -> rules.add(allowedGrayscale(false))
-                trimmedRule == "+dither" -> rules.add(allowedDither(true))
-                trimmedRule == "-dither" -> rules.add(allowedDither(false))
+        rulesConfig
+            .replace("\n", ";")
+            .split(";")
+            .filter { it.isNotBlank() }
+            .filter { !it.startsWith("#") } // allow comments
+            .forEach { rule ->
+                val trimmedRule = rule.trim()
+                when {
+                    // allow or disallow boolean features
+                    trimmedRule == "+flipV" -> rules.add(allowedFlipV(true))
+                    trimmedRule == "-flipV" -> rules.add(allowedFlipV(false))
+                    trimmedRule == "+flipH" -> rules.add(allowedFlipH(true))
+                    trimmedRule == "-flipH" -> rules.add(allowedFlipH(false))
+                    trimmedRule == "+crop" -> rules.add(allowedCrop(true))
+                    trimmedRule == "-crop" -> rules.add(allowedCrop(false))
+                    trimmedRule == "+grayscale" -> rules.add(allowedGrayscale(true))
+                    trimmedRule == "-grayscale" -> rules.add(allowedGrayscale(false))
+                    trimmedRule == "+dither" -> rules.add(allowedDither(true))
+                    trimmedRule == "-dither" -> rules.add(allowedDither(false))
 
-                // dimensions rule
-                trimmedRule.startsWith("dim") -> {
-                    val dimensions = trimmedRule.removePrefix("dim").trim().split(" ")
-                    dimensions.forEach {
-                        val (w, h) = it.split("x").map { it.toInt() }
-                        allowedDimensions.add(w to h)
+                    // dimensions rule
+                    trimmedRule.startsWith("dim") -> {
+                        val dimensions = trimmedRule.removePrefix("dim").trim().split(" ")
+                        dimensions.forEach {
+                            val (w, h) = it.split("x").map { it.toInt() }
+                            allowedDimensions.add(w to h)
+                        }
+                        rules.add(allowedDimensions(allowedDimensions))
                     }
-                    rules.add(allowedDimensions(allowedDimensions))
-                }
 
-                // blur rule
-                trimmedRule.startsWith("blur") -> {
-                    val radii = trimmedRule.removePrefix("blur").trim().split(" ").map { it.toFloat() }
-                    allowedBlur.addAll(radii)
-                    rules.add(allowedBlurRadius(allowedBlur))
-                }
+                    // blur rule
+                    trimmedRule.startsWith("blur") -> {
+                        val radii = trimmedRule.removePrefix("blur").trim().split(" ").map { it.toFloat() }
+                        allowedBlur.addAll(radii)
+                        rules.add(allowedBlurRadius(allowedBlur))
+                    }
 
-                // quality rule
-                trimmedRule.startsWith("quality") -> {
-                    val qualities = trimmedRule.removePrefix("quality").trim().split(" ").map { it.toInt() }
-                    allowedQuality.addAll(qualities)
-                    rules.add(allowedQuality(allowedQuality))
-                }
+                    // quality rule
+                    trimmedRule.startsWith("quality") -> {
+                        val qualities = trimmedRule.removePrefix("quality").trim().split(" ").map { it.toInt() }
+                        allowedQuality.addAll(qualities)
+                        rules.add(allowedQuality(allowedQuality))
+                    }
 
-                // rotate rule
-                trimmedRule.startsWith("rotate") -> {
-                    val angles = trimmedRule.removePrefix("rotate").trim().split(" ").map { it.toFloat() }
-                    allowedRotate.addAll(angles)
-                    rules.add(allowedRotate(allowedRotate))
-                }
+                    // rotate rule
+                    trimmedRule.startsWith("rotate") -> {
+                        val angles = trimmedRule.removePrefix("rotate").trim().split(" ").map { it.toFloat() }
+                        allowedRotate.addAll(angles)
+                        rules.add(allowedRotate(allowedRotate))
+                    }
 
-                // sharpen rule
-                trimmedRule.startsWith("sharpen") -> {
-                    val sharpens = trimmedRule.removePrefix("sharpen").trim().split(" ").map { it.toFloat() }
-                    allowedSharpen.addAll(sharpens)
-                    rules.add(allowedSharpen(allowedSharpen))
+                    // sharpen rule
+                    trimmedRule.startsWith("sharpen") -> {
+                        val sharpens = trimmedRule.removePrefix("sharpen").trim().split(" ").map { it.toFloat() }
+                        allowedSharpen.addAll(sharpens)
+                        rules.add(allowedSharpen(allowedSharpen))
+                    }
                 }
             }
-        }
         return rules
     }
 }
