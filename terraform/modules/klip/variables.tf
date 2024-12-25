@@ -43,6 +43,22 @@ variable "klip_s3_cache_folder" {
   default = "_cache/"
 }
 
+
+variable "klip_rules" {
+  type = string
+}
+
+variable "klip_rules_file" {
+  type = string
+}
+
+variable "klip_rules_validation_mode" {
+  type    = string
+  default = "STRICT"
+}
+
+
+
 variable "vpc_id" {
   type = string
 }

@@ -8,6 +8,9 @@ ENV KLIP_S3_BUCKET=cdn.klip.com
 ENV KLIP_CACHE_ENABLED=true
 ENV KLIP_CACHE_BUCKET=cdn.klip.com
 ENV KLIP_CACHE_FOLDER=_cache/
+ENV KLIP_RULES=""
+ENV KLIP_RULES_FILE=""
+ENV KLIP_RULES_VALIDATION_MODE=STRICT
 
 # Create app directory and set working directory
 WORKDIR /app

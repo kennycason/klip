@@ -11,6 +11,8 @@ locals {
     s3_bucket        = "cdn.klip.com"
     s3_cache_bucket  = "cdn.klip.com"
     s3_cache_folder  = "_cache/"
+    rules            = ""
+    rules_file       = "", rules_validation_mode = "STRICT"
   }
   fargate_cpu     = 2048
   fargate_memory  = 2048

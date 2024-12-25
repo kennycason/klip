@@ -13,18 +13,19 @@ It supports caching, resizing, cropping, grayscale filters, and rotation via HTT
 
 ## Environment Configuration (Env)
 
-| Section   | Variable           | Type    | Default                    | Required | Description                                                                   |
-|-----------|--------------------|---------|----------------------------|----------|-------------------------------------------------------------------------------|
-| **LOG**   | `KLIP_LOG_LEVEL`   | Enum    | `INFO`                     | No       | `TRACE`, `INFO`, `DEBUG`, `WARN`, `ERROR`                                     |
-| **HTTP**  | `KLIP_HTTP_PORT`   | Int     | `8080`                     | No       | The HTTP port the server listens on.                                          |
-| **AWS**   | `KLIP_AWS_REGION`  | String  | -                          | Yes      | AWS region for S3 bucket (e.g., `us-west-2`).                                 |
-| **AWS**   | `KLIP_S3_BUCKET`   | String  | -                          | Yes      | The S3 bucket name where source images are stored.                            |
-| **Cache** | `KLIP_CACHE_ENABLED` | Boolean | True                       | No       | If false, disable image cache.                                                |
-| **Cache** | `KLIP_CACHE_BUCKET` | String  | *Same as `KLIP_S3_BUCKET`* | No       | Used if using different S3 bucket for caching.                                |
-| **Cache** | `KLIP_CACHE_FOLDER` | String  | `_cache/`                  | No       | Prefix for cached files. Stored within the cache bucket.                      |
-| **Rules** | `KLIP_RULES_VALIDATION_MODE` | Enum    | `STRICT`                   | No       | `LENIENT` ignore errors, `STRICT` throw exceptions on errors.                 |
-| **Rules** | `KLIP_RULES`       | String  | "" (empty)                 | No       | Inline rule definitions separated by ; (e.g., +flipV;-flipH;dim 32x32 64x64). |
-| **Rules** | `KLIP_RULES_FILE`  | String  | -                          | No       | Path to a rules file with one rule per line. Overrides KLIP_RULES.  |
+| Section    | Variable                     | Type    | Default                    | Required | Description                                                                   |
+|------------|------------------------------|---------|----------------------------|----------|-------------------------------------------------------------------------------|
+| **LOG**    | `KLIP_LOG_LEVEL`             | Enum    | `INFO`                     | No       | `TRACE`, `INFO`, `DEBUG`, `WARN`, `ERROR`                                     |
+| **HTTP**   | `KLIP_HTTP_PORT`             | Int     | `8080`                     | No       | The HTTP port the server listens on.                                          |
+| **AWS**    | `KLIP_AWS_REGION`            | String  | -                          | Yes      | AWS region for S3 bucket (e.g., `us-west-2`).                                 |
+| **AWS**    | `KLIP_S3_BUCKET`             | String  | -                          | Yes      | The S3 bucket name where source images are stored.                            |
+| **Cache**  | `KLIP_CACHE_ENABLED`         | Boolean | True                       | No       | If false, disable image cache.                                                |
+| **Cache**  | `KLIP_CACHE_BUCKET`          | String  | *Same as `KLIP_S3_BUCKET`* | No       | Used if using different S3 bucket for caching.                                |
+| **Cache**  | `KLIP_CACHE_FOLDER`          | String  | `_cache/`                  | No       | Prefix for cached files. Stored within the cache bucket.                      |
+|  **Rules** | `KLIP_RULES`                 | String  | "" (empty)                 | No       | Inline rule definitions separated by ; (e.g., +flipV;-flipH;dim 32x32 64x64). |
+| **Rules**  | `KLIP_RULES_FILE`            | String  | -                          | No       | Path to a rules file with one rule per line. Overrides KLIP_RULES.            |
+| **Rules**  | `KLIP_RULES_VALIDATION_MODE` | Enum    | `STRICT`                   | No       | `LENIENT` ignore errors, `STRICT` throw exceptions on errors.                 |
+
 
 ---
 

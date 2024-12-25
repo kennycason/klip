@@ -229,6 +229,9 @@ resource "aws_ecs_task_definition" "klip_task" {
         { name = "KLIP_CACHE_ENABLED", value = var.klip_s3_cache_enabled },
         { name = "KLIP_CACHE_BUCKET", value = var.klip_s3_cache_bucket },
         { name = "KLIP_CACHE_FOLDER", value = var.klip_s3_cache_folder },
+        { name = "KLIP_RULES", value = var.klip_rules },
+        { name = "KLIP_RULES_FILE", value = var.klip_rules_file },
+        { name = "KLIP_RULES_VALIDATION_MODE", value = var.klip_rules_validation_mode },
       ]
 
       portMappings = [
