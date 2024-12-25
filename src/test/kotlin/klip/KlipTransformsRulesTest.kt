@@ -134,7 +134,7 @@ class KlipTransformsRulesTest {
             )
         }
 
-        expectThat(exception.message).isEqualTo("Allowed dimensions are $allowed. Got: 50x50")
+        expectThat(exception.message).isEqualTo("Allowed dimensions are 100x100 200x200. Got: 50x50")
     }
 
     @Test

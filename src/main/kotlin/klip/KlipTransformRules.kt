@@ -29,7 +29,7 @@ object KlipTransformRules {
     fun allowedDimensions(allowed: Set<Pair<Int, Int>>) = KlipTransformRule(
         name = "dim ${allowed.joinToString(" ") { "${it.first}x${it.second}" }}",
         isValid = { (it.width to it.height) in allowed },
-        errorMessage = { "Allowed dimensions are $allowed. Got: ${it.width}x${it.height}" },
+        errorMessage = { "Allowed dimensions are ${allowed.joinToString(" ") { "${it.first}x${it.second}" }}. Got: ${it.width}x${it.height}" },
         clear = {
             val default = allowed.firstOrNull() ?: (1 to 1)
             it.width = default.first
