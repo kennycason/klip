@@ -27,10 +27,10 @@ fun main() = runBlocking {
         "?quality=75",
         "?crop&w=256&h=256&fit=contain"
     )
-    val concurrencyLevel = 10   // Number of concurrent requests
-    val totalRequests = 200      // Total requests to send
-    val timeoutMillis = 5000    // Timeout for each request in ms
-    val maxRetries = 1          // Retry failed requests
+    val concurrencyLevel = 50     // Number of concurrent requests
+    val totalRequests = 1000      // Total requests to send
+    val timeoutMillis = 5000      // Timeout for each request in ms
+    val maxRetries = 1           // Retry failed requests
 
     // metrics
     var successCount = 0

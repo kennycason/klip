@@ -57,7 +57,7 @@ data class KlipCanvasTransforms(
                 patternSize = parameters["patternSize"]?.toIntOrNull(),
                 gradient = parameters["gradient"],
                 font = parameters["font"],
-                textAlign = parameters["align"],
+                textAlign = parameters["textAlign"],
                 border = parameters["border"]?.toIntOrNull(),
                 borderColor = parameters["borderColor"],
                 radius = parameters["radius"]?.toIntOrNull(),

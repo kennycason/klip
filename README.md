@@ -13,17 +13,22 @@ It supports caching, resizing, cropping, grayscale filters, and rotation via HTT
 
 ## Environment Configuration (Env)
 
-| Section   | Variable             | Type    | Default                    | Required | Description                                                                   |
-|-----------|----------------------|---------|----------------------------|----------|-------------------------------------------------------------------------------|
-| **LOG**   | `KLIP_LOG_LEVEL`     | Enum    | `INFO`                     | No       | `TRACE`, `INFO`, `DEBUG`, `WARN`, `ERROR`                                     |
-| **HTTP**  | `KLIP_HTTP_PORT`     | Int     | `8080`                     | No       | The HTTP port the server listens on.                                          |
-| **AWS**   | `KLIP_AWS_REGION`    | String  | -                          | Yes      | AWS region for S3 bucket (e.g., `us-west-2`).                                 |
-| **AWS**   | `KLIP_S3_BUCKET`     | String  | -                          | Yes      | The S3 bucket name where source images are stored.                            |
-| **Cache** | `KLIP_CACHE_ENABLED` | Boolean | True                       | No       | If false, disable image cache.                                                |
-| **Cache** | `KLIP_CACHE_BUCKET`  | String  | *Same as `KLIP_S3_BUCKET`* | No       | Used if using different S3 bucket for caching.                                |
-| **Cache** | `KLIP_CACHE_FOLDER`  | String  | `_cache/`                  | No       | Prefix for cached files. Stored within the cache bucket.                      |
-| **Rules** | `KLIP_RULES`         | String  | "" (empty)                 | No       | Inline rule definitions separated by ; (e.g., +flipV;-flipH;dim 32x32 64x64). |
-| **Rules** | `KLIP_RULES_FILE`    | String  | -                          | No       | Path to a rules file with one rule per line. Overrides KLIP_RULES.            |
+| Section            | Variable                  | Type    | Default                    | Required | Description                                                                   |
+|--------------------|---------------------------|---------|----------------------------|----------|-------------------------------------------------------------------------------|
+| **LOG**            | `KLIP_LOG_LEVEL`          | Enum    | `INFO`                     | No       | `TRACE`, `INFO`, `DEBUG`, `WARN`, `ERROR`                                     |
+| **HTTP**           | `KLIP_HTTP_PORT`          | Int     | `8080`                     | No       | The HTTP port the server listens on.                                          |
+| **AWS**            | `KLIP_AWS_REGION`         | String  | -                          | Yes      | AWS region for S3 bucket (e.g., `us-west-2`).                                 |
+| **AWS**            | `KLIP_S3_BUCKET`          | String  | -                          | Yes      | The S3 bucket name where source images are stored.                            |
+| **Cache**          | `KLIP_CACHE_ENABLED`      | Boolean | True                       | No       | If false, disable image cache.                                                |
+| **Cache**          | `KLIP_CACHE_BUCKET`       | String  | *Same as `KLIP_S3_BUCKET`* | No       | Used if using different S3 bucket for caching.                                |
+| **Cache**          | `KLIP_CACHE_FOLDER`       | String  | `_cache/`                  | No       | Prefix for cached files. Stored within the cache bucket.                      |
+| **Rules**          | `KLIP_RULES`              | String  | "" (empty)                 | No       | Inline rule definitions separated by ; (e.g., +flipV;-flipH;dim 32x32 64x64). |
+| **Rules**          | `KLIP_RULES_FILE`         | String  | -                          | No       | Path to a rules file with one rule per line. Overrides KLIP_RULES.            |
+| **GraphicsMagick** | `KLIP_GM_TIMEOUT_SECONDS` | Long    | `30`                       | No       | Maximum time in seconds for a GraphicsMagick operation.                       |
+| **GraphicsMagick** | `KLIP_GM_MEMORY_LIMIT`    | String  | `256MB`                    | No       | Memory limit for GraphicsMagick operations.                                   |
+| **GraphicsMagick** | `KLIP_GM_MAP_LIMIT`       | String  | `512MB`                    | No       | Memory map limit for GraphicsMagick operations.                               |
+| **GraphicsMagick** | `KLIP_GM_DISK_LIMIT`      | String  | `1GB`                      | No       | Disk space limit for GraphicsMagick operations.                               |
+| **GraphicsMagick** | `KLIP_GM_POOL_SIZE`       | Int     | *Available Processors*     | No       | Maximum number of concurrent GraphicsMagick operations.                       |
 
 ---
 
@@ -38,6 +43,11 @@ KLIP_CACHE_ENABLED=true \
 KLIP_CACHE_BUCKET=cdn.klip.com \
 KLIP_CACHE_FOLDER=.cache/ \
 KLIP_RULES="+flipV;-flipH;dim 32x32 64x64 256x256" \
+KLIP_GM_TIMEOUT_SECONDS=30 \
+KLIP_GM_MEMORY_LIMIT=256MB \
+KLIP_GM_MAP_LIMIT=512MB \
+KLIP_GM_DISK_LIMIT=1GB \
+KLIP_GM_POOL_SIZE=4 \
 java -jar build/libs/klip-all.jar
 ```
 
@@ -640,7 +650,14 @@ Query Parameters:
 | `flipH`       | Bool   | Optional | false   | Flip horizontally                              |
 | `flipV`       | Bool   | Optional | false   | Flip vertically                                |
 
-Examples:
+
+| Endpoint                                                                                                           | Description                                                                                                  |
+|--------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------|
+| `/canvas/300x200?text=Hello&bgColor=%23336699&textColor=white`                                                     | ![Canvas](https://github.com/kennycason/klip/blob/main/images/canvas_320x240_hello.png?raw=true)             |
+| `/canvas/320x320?text=Hello&textSize=40&pattern=check&patternSize=32&borderColor=black0&border=10&textColor=white` | ![Canvas](https://github.com/kennycason/klip/blob/main/images/canvas_320x320_bordered_grid.png?raw=true)     |
+| `/canvas/320x320?text=Hello&textSize=40&borderColor=black&border=10&textColor=white&gradient=blue%2Cred`           | ![Canvas](https://github.com/kennycason/klip/blob/main/images/canvas_320x320_bordered_gradient.png?raw=true) |
+
+More Examples:
 
 ```bash
 # Basic gray placeholder
@@ -663,18 +680,6 @@ GET /canvas/300x200?pattern=grid&patternSize=50&text=Grid
 GET /canvas/300x200?bg=white&border=5&borderColor=black&radius=10
 GET /canvas/300x200?text=Hello&font=Helvetica&align=north&grayscale=1
 ```
-
-```bash
-GET /canvas/320x320?text=Hello&bgColor=%23336699&textColor=white&flipH&textSize=40&pattern=check&borderColor=black&patternSize=320&border=10
-```
-
-![Canvas](https://github.com/kennycason/klip/blob/main/images/placeholder_320x240_hello.png?raw=true)
-
-```bash
-GET /canvas/320x320?text=Hello&textSize=40&pattern=check&borderColor=black&patternSize=320&border=10&bgColor=%23336699&textColor=white
-```
-![Canvas](https://github.com/kennycason/klip/blob/main/images/placeholder_320x320_bordered_grid.png?raw=true)
-
 ## Errors
 
 ```bash
@@ -772,7 +777,6 @@ terraform apply
 
 # Roadmap
 
-- Whitelist filters to prevent abuse
 - Configurable Secret Key to protect admin endpoints (clear cache, get stats)
 - Migrate to Kotlin Native after (aws s3 client is for kotlin jvm)
 - Configurable backend storage (S3 vs File)
