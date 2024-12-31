@@ -5,59 +5,7 @@ It supports caching, resizing, cropping, grayscale filters, and rotation via HTT
 
 ---
 
-## Build Project
-
-```shell
-./gradlew clean build
-```
-
-## Environment Configuration (Env)
-
-| Section            | Variable                  | Type    | Default                    | Required | Description                                                                   |
-|--------------------|---------------------------|---------|----------------------------|----------|-------------------------------------------------------------------------------|
-| **LOG**            | `KLIP_LOG_LEVEL`          | Enum    | `INFO`                     | No       | `TRACE`, `INFO`, `DEBUG`, `WARN`, `ERROR`                                     |
-| **HTTP**           | `KLIP_HTTP_PORT`          | Int     | `8080`                     | No       | The HTTP port the server listens on.                                          |
-| **AWS**            | `KLIP_AWS_REGION`         | String  | -                          | Yes      | AWS region for S3 bucket (e.g., `us-west-2`).                                 |
-| **AWS**            | `KLIP_S3_BUCKET`          | String  | -                          | Yes      | The S3 bucket name where source images are stored.                            |
-| **Cache**          | `KLIP_CACHE_ENABLED`      | Boolean | True                       | No       | If false, disable image cache.                                                |
-| **Cache**          | `KLIP_CACHE_BUCKET`       | String  | *Same as `KLIP_S3_BUCKET`* | No       | Used if using different S3 bucket for caching.                                |
-| **Cache**          | `KLIP_CACHE_FOLDER`       | String  | `_cache/`                  | No       | Prefix for cached files. Stored within the cache bucket.                      |
-| **Rules**          | `KLIP_RULES`              | String  | "" (empty)                 | No       | Inline rule definitions separated by ; (e.g., +flipV;-flipH;dim 32x32 64x64). |
-| **Rules**          | `KLIP_RULES_FILE`         | String  | -                          | No       | Path to a rules file with one rule per line. Overrides KLIP_RULES.            |
-| **GraphicsMagick** | `KLIP_GM_TIMEOUT_SECONDS` | Long    | `30`                       | No       | Maximum time in seconds for a GraphicsMagick operation.                       |
-| **GraphicsMagick** | `KLIP_GM_MEMORY_LIMIT`    | String  | `256MB`                    | No       | Memory limit for GraphicsMagick operations.                                   |
-| **GraphicsMagick** | `KLIP_GM_MAP_LIMIT`       | String  | `512MB`                    | No       | Memory map limit for GraphicsMagick operations.                               |
-| **GraphicsMagick** | `KLIP_GM_DISK_LIMIT`      | String  | `1GB`                      | No       | Disk space limit for GraphicsMagick operations.                               |
-| **GraphicsMagick** | `KLIP_GM_POOL_SIZE`       | Int     | *Available Processors*     | No       | Maximum number of concurrent GraphicsMagick operations.                       |
-
----
-
-## Run Klip Server
-
-```bash
-KLIP_LOG_LEVEL=INFO \
-KLIP_HTTP_PORT=8080 \
-KLIP_AWS_REGION=us-west-2 \
-KLIP_S3_BUCKET=cdn.klip.com \
-KLIP_CACHE_ENABLED=true \
-KLIP_CACHE_BUCKET=cdn.klip.com \
-KLIP_CACHE_FOLDER=.cache/ \
-KLIP_RULES="+flipV;-flipH;dim 32x32 64x64 256x256" \
-KLIP_GM_TIMEOUT_SECONDS=30 \
-KLIP_GM_MEMORY_LIMIT=256MB \
-KLIP_GM_MAP_LIMIT=512MB \
-KLIP_GM_DISK_LIMIT=1GB \
-KLIP_GM_POOL_SIZE=4 \
-java -jar build/libs/klip-all.jar
-```
-
-Default local endpoint: `http://0.0.0.0:8080`
-
----
-
-# API Documentation
-
-## Get Original Image
+## Get Image
 
 ```
 GET /img/{path/to/image}
@@ -590,7 +538,7 @@ docker run -e KLIP_RULES_FILE=/config/rules.txt -v /local/config:/config klip-ap
 
 ---
 
-## **6. Testing Rules Locally**
+## Testing Rules Locally
 
 To test rules without deployment:
 
@@ -708,6 +656,58 @@ brew install graphicsmagick
 ```
 
 ---
+
+
+## Build Project
+
+```shell
+./gradlew clean build
+```
+
+## Environment Configuration (Env)
+
+| Section            | Variable                  | Type    | Default                    | Required | Description                                                                   |
+|--------------------|---------------------------|---------|----------------------------|----------|-------------------------------------------------------------------------------|
+| **LOG**            | `KLIP_LOG_LEVEL`          | Enum    | `INFO`                     | No       | `TRACE`, `INFO`, `DEBUG`, `WARN`, `ERROR`                                     |
+| **HTTP**           | `KLIP_HTTP_PORT`          | Int     | `8080`                     | No       | The HTTP port the server listens on.                                          |
+| **AWS**            | `KLIP_AWS_REGION`         | String  | -                          | Yes      | AWS region for S3 bucket (e.g., `us-west-2`).                                 |
+| **AWS**            | `KLIP_S3_BUCKET`          | String  | -                          | Yes      | The S3 bucket name where source images are stored.                            |
+| **Cache**          | `KLIP_CACHE_ENABLED`      | Boolean | True                       | No       | If false, disable image cache.                                                |
+| **Cache**          | `KLIP_CACHE_BUCKET`       | String  | *Same as `KLIP_S3_BUCKET`* | No       | Used if using different S3 bucket for caching.                                |
+| **Cache**          | `KLIP_CACHE_FOLDER`       | String  | `_cache/`                  | No       | Prefix for cached files. Stored within the cache bucket.                      |
+| **Rules**          | `KLIP_RULES`              | String  | "" (empty)                 | No       | Inline rule definitions separated by ; (e.g., +flipV;-flipH;dim 32x32 64x64). |
+| **Rules**          | `KLIP_RULES_FILE`         | String  | -                          | No       | Path to a rules file with one rule per line. Overrides KLIP_RULES.            |
+| **GraphicsMagick** | `KLIP_GM_TIMEOUT_SECONDS` | Long    | `30`                       | No       | Maximum time in seconds for a GraphicsMagick operation.                       |
+| **GraphicsMagick** | `KLIP_GM_MEMORY_LIMIT`    | String  | `256MB`                    | No       | Memory limit for GraphicsMagick operations.                                   |
+| **GraphicsMagick** | `KLIP_GM_MAP_LIMIT`       | String  | `512MB`                    | No       | Memory map limit for GraphicsMagick operations.                               |
+| **GraphicsMagick** | `KLIP_GM_DISK_LIMIT`      | String  | `1GB`                      | No       | Disk space limit for GraphicsMagick operations.                               |
+| **GraphicsMagick** | `KLIP_GM_POOL_SIZE`       | Int     | *Available Processors*     | No       | Maximum number of concurrent GraphicsMagick operations.                       |
+
+---
+
+## Run Klip Server
+
+```bash
+KLIP_LOG_LEVEL=INFO \
+KLIP_HTTP_PORT=8080 \
+KLIP_AWS_REGION=us-west-2 \
+KLIP_S3_BUCKET=cdn.klip.com \
+KLIP_CACHE_ENABLED=true \
+KLIP_CACHE_BUCKET=cdn.klip.com \
+KLIP_CACHE_FOLDER=.cache/ \
+KLIP_RULES="+flipV;-flipH;dim 32x32 64x64 256x256" \
+KLIP_GM_TIMEOUT_SECONDS=30 \
+KLIP_GM_MEMORY_LIMIT=256MB \
+KLIP_GM_MAP_LIMIT=512MB \
+KLIP_GM_DISK_LIMIT=1GB \
+KLIP_GM_POOL_SIZE=4 \
+java -jar build/libs/klip-all.jar
+```
+
+Default local endpoint: `http://0.0.0.0:8080`
+
+---
+
 
 # Docker
 
