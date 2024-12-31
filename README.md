@@ -611,38 +611,69 @@ KLIP_RULES="+flipV;-flipH;dim 32x32 64x64 128x128" ./gradlew run
 ## Generate Placeholder Image
 
 ```bash
-GET /placeholder/{width}x{height}
+GET /canvas/{width}x{height}
 ```
 
 Generate a placeholder image with custom dimensions, background color, and optional text overlay.
 
 Query Parameters:
 
-| Parameter   | Type   | Required | Default | Description                         |
-|-------------|--------|----------|---------|-------------------------------------|
-| `bgColor`   | String | Optional | gray    | Background color (name or hex code) |
-| `textcolor` | String | Optional | white   | Text color (name or hex code)       |
-| `textSize`  | Int    | Optional | 20      | Font size for the text              |
-| `text`      | String | Optional | -       | Text to display on the placeholder  |
+| Parameter     | Type   | Required | Default | Description                                    |
+|---------------|--------|----------|---------|------------------------------------------------|
+| `bgColor`     | String | Optional | gray    | Background color (name or hex code)            |
+| `textColor`   | String | Optional | white   | Text color (name or hex code)                  |
+| `textSize`    | Int    | Optional | 20      | Font size for the text                         |
+| `text`        | String | Optional | -       | Text to display on the canvas                  |
+| `pattern`     | String | Optional | -       | Pattern type: "check", "grid", "stripe"        |
+| `patternSize` | Int    | Optional | 20-40   | Size of pattern elements                       |
+| `gradient`    | String | Optional | -       | Gradient spec: "blue,red" or "45,#ff0000,blue" |
+| `font`        | String | Optional | Arial   | Font family for text                           |
+| `textAlign`   | String | Optional | center  | Text alignment: "center", "north", "southwest" |
+| `border`      | Int    | Optional | -       | Border width in pixels                         |
+| `borderColor` | String | Optional | -       | Border color (name or hex code)                |
+| `radius`      | Int    | Optional | 0       | Corner radius for rounded corners              |
+| `grayscale`   | Bool   | Optional | false   | Convert to grayscale                           |
+| `quality`     | Int    | Optional | -       | Output image quality (1-100)                   |
+| `blur`        | String | Optional | -       | Blur effect: "2.5" or "2.5x1.2"                |
+| `sharpen`     | Float  | Optional | -       | Sharpen effect intensity                       |
+| `rotate`      | Float  | Optional | -       | Rotation angle in degrees                      |
+| `flipH`       | Bool   | Optional | false   | Flip horizontally                              |
+| `flipV`       | Bool   | Optional | false   | Flip vertically                                |
 
 Examples:
 
 ```bash
 # Basic gray placeholder
-GET /placeholder/640x480
+GET /canvas/640x480
 
 # Blue placeholder with text
-GET /placeholder/200x100?bgColor=blue&text=Hello
+GET /canvas/200x100?bgColor=blue&text=Hello
 
 # Custom colors and font size
-GET /placeholder/400x300?bgColor=%23FF0000&textColor=white&text=Preview&textSize=30
+GET /canvas/400x300?bgColor=%23FF0000&textColor=white&text=Preview&textSize=30
 
 # Using hex colors
-GET /placeholder/300x200?bgColor=%23336699&text=Loading
+GET /canvas/300x200?bgColor=%23336699&text=Loading
+
+# More
+GET /canvas/300x200?bg=blue&text=Hello
+GET /canvas/300x200?gradient=45,blue,red&text=Gradient
+GET /canvas/300x200?pattern=check&patternSize=30
+GET /canvas/300x200?pattern=grid&patternSize=50&text=Grid
+GET /canvas/300x200?bg=white&border=5&borderColor=black&radius=10
+GET /canvas/300x200?text=Hello&font=Helvetica&align=north&grayscale=1
 ```
 
-![Placeholder](https://github.com/kennycason/klip/blob/main/images/placeholder_320x240_hello.png?raw=true)
+```bash
+GET /canvas/320x320?text=Hello&bgColor=%23336699&textColor=white&flipH&textSize=40&pattern=check&borderColor=black&patternSize=320&border=10
+```
 
+![Canvas](https://github.com/kennycason/klip/blob/main/images/placeholder_320x240_hello.png?raw=true)
+
+```bash
+GET /canvas/320x320?text=Hello&textSize=40&pattern=check&borderColor=black&patternSize=320&border=10&bgColor=%23336699&textColor=white
+```
+![Canvas](https://github.com/kennycason/klip/blob/main/images/placeholder_320x320_bordered_grid.png?raw=true)
 
 ## Errors
 

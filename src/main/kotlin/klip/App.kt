@@ -136,16 +136,12 @@ object Routes {
                 call.handleImageRequest(s3Client, env)
             }
 
-            get("/placeholder/{dimensions}") {
-                call.handlePlaceholderRequest(env)
+            get("/canvas/{dimensions}") {
+                call.handleCanvasRequest(env)
             }
 
             get("/health") {
                 call.respond(KlipHealth())
-            }
-
-            get("/version") {
-                call.respondText("1.0.0", ContentType.Text.Plain)
             }
 
             get("/admin/status") {
@@ -157,6 +153,10 @@ object Routes {
                         pool = GraphicsMagickPool.getStats()
                     )
                 )
+            }
+
+            get("/version") {
+                call.respondText("1.0.0", ContentType.Text.Plain)
             }
         }
 
@@ -218,33 +218,16 @@ object Routes {
         }
     }
 
-    private suspend fun ApplicationCall.handlePlaceholderRequest(env: Env) {
-        val dimensions = parameters["dimensions"] ?: throw BadRequestException("Dimensions required")
-        if (!dimensions.matches(Regex("^\\d+x\\d+$"))) {
-            throw BadRequestException("Invalid dimensions format. Expected: {width}x{height}")
-        }
-        val (width, height) = dimensions.split("x").map { it.toInt() }
-
-        val text = parameters["text"]
-        val bgColor = parameters["bgColor"] ?: "gray"
-        val textColor = parameters["textColor"] ?: "white"
-        val textSize = parameters["textSize"]?.toIntOrNull() ?: 20
-
+    private suspend fun ApplicationCall.handleCanvasRequest(env: Env) {
         try {
-            val image = GraphicsMagickImageProcessor.createPlaceholder(
-                width = width,
-                height = height,
-                text = text,
-                bgColor = bgColor,
-                textColor = textColor,
-                textSize = textSize
-            )
+            val transforms = KlipCanvasTransforms.from(parameters)
+            val image = GraphicsMagickImageProcessor.createCanvas(transforms)
 
             response.headers.append("Content-Type", ContentType.Image.PNG.toString())
             respondBytes(image)
         } catch (e: Exception) {
-            logger.error("Error creating placeholder: ${e.message}", e)
-            respond(HttpStatusCode.InternalServerError, "Error creating placeholder image")
+            logger.error("Error creating canvas: ${e.message}", e)
+            respond(HttpStatusCode.InternalServerError, "Error creating canvas image")
         }
     }
 }

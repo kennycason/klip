@@ -17,7 +17,7 @@ import kotlin.system.measureTimeMillis
  * https://klip.arrived.com/img/properties/702/c0259e4ef8757ace42558e9aa6fcdf15.jpg?quality=90&w=956&h=468&fit=contain
  */
 fun main() = runBlocking {
-    val isLocal = true
+    val isLocal = false
     val baseUrl = if (isLocal) "http://localhost:8080/img" else "https://klip.arrived.com/img"
     val queryParams = listOf(
         "?quality=90&d=956x468",
@@ -27,7 +27,7 @@ fun main() = runBlocking {
         "?quality=75",
         "?crop&w=256&h=256&fit=contain"
     )
-    val concurrencyLevel = 40   // Number of concurrent requests
+    val concurrencyLevel = 10   // Number of concurrent requests
     val totalRequests = 200      // Total requests to send
     val timeoutMillis = 5000    // Timeout for each request in ms
     val maxRetries = 1          // Retry failed requests

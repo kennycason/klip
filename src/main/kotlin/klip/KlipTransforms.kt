@@ -150,7 +150,7 @@ data class KlipTransforms(
         /**
          * Helper to parse float values.
          */
-        private fun parseFloat(key: String, parameters: Parameters): Float? {
+        fun parseFloat(key: String, parameters: Parameters): Float? {
             val value = parameters[key]
             return try {
                 value?.toFloat()
@@ -162,7 +162,7 @@ data class KlipTransforms(
         /**
          * Helper to parse integer values.
          */
-        private fun parseInt(key: String, parameters: Parameters): Int? {
+        fun parseInt(key: String, parameters: Parameters): Int? {
             val value = parameters[key]
             return try {
                 value?.toInt()
@@ -174,7 +174,7 @@ data class KlipTransforms(
         /**
          * parse blur input (supports single and compound formats).
          */
-        private fun parseBlur(blur: String?): Pair<Float?, Float?> {
+        fun parseBlur(blur: String?): Pair<Float?, Float?> {
             if (blur.isNullOrEmpty()) return null to null
             val parts = blur.split("x")
 
@@ -196,7 +196,7 @@ data class KlipTransforms(
         /**
          * helper for boolean flags.
          */
-        private fun isParamTrue(key: String, parameters: Parameters): Boolean {
+        fun isParamTrue(key: String, parameters: Parameters): Boolean {
             val value = parameters[key]
             return (key in parameters && parameters[key] == null) || // 0-arity parameters like ?flipV
                 (value == "1" || value == "true")                    // 1-arity parameters like ?flipV=1 or ?flipV=true

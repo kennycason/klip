@@ -183,57 +183,148 @@ object GraphicsMagickImageProcessor {
     }
 
 
-
-    suspend fun createPlaceholder(
-        width: Int,
-        height: Int,
-        text: String? = null,
-        bgColor: String = "gray",
-        textColor: String = "white",
-        textSize: Int = 20
-    ): ByteArray {
+    suspend fun createCanvas(t: KlipCanvasTransforms): ByteArray {
         return GraphicsMagickPool.withGraphicsMagick {
-            createPlaceholderUnsafe(width, height, text, bgColor, textColor, textSize)
+            createCanvasUnsafe(t)
         }
     }
 
-    private fun createPlaceholderUnsafe(
-        width: Int,
-        height: Int,
-        text: String?,
-        bgColor: String,
-        textColor: String,
-        textSize: Int
-    ): ByteArray {
+    private fun createCanvasUnsafe(t: KlipCanvasTransforms): ByteArray {
         val tempDir = File("/tmp")
-        val outputFile = File(tempDir, "gm_placeholder_${UUID.randomUUID()}.png")
+        val outputFile = File(tempDir, "gm_canvas_${UUID.randomUUID()}.png")
 
         try {
             val command = mutableListOf("gm", "convert")
 
-            // Create blank canvas with background color
-            command.add("-size")
-            command.add("${width}x${height}")
-            command.add("xc:$bgColor")
-
-            // If text is provided, add it
-            if (!text.isNullOrBlank()) {
-                command.add("-gravity")
-                command.add("center")
-                command.add("-font")
-                command.add("Arial") // or another available font
-                command.add("-pointsize")
-                command.add(textSize.toString())
-                command.add("-fill")
-                command.add(textColor)
-                command.add("-draw")
-                command.add("text 0,0 '$text'")  // Changed from -annotate to -draw
-            }
-
-            // Add safety limits from config
+            // Add safety limits
             command.addAll(listOf("-limit", "memory", config.memoryLimit))
             command.addAll(listOf("-limit", "map", config.mapLimit))
             command.addAll(listOf("-limit", "disk", config.diskLimit))
+
+            // Base canvas creation
+            command.add("-size")
+            command.add("${t.width}x${t.height}")
+
+            // Handle background (solid color or gradient)
+            when {
+                t.gradient != null -> {
+                    val parts = t.gradient.split(",")
+                    when {
+                        parts.size == 2 -> {
+                            command.add("gradient:${parts[0]}-${parts[1]}")
+                        }
+                        parts.size >= 3 -> {
+                            val angle = parts[0].toIntOrNull() ?: 0
+                            val colors = parts.drop(1)
+                            command.add("gradient:${colors.first()}-${colors.last()}")
+                            if (angle != 0) {
+                                command.add("-rotate")
+                                command.add(angle.toString())
+                            }
+                        }
+                        else -> command.add("xc:${t.bgColor}")
+                    }
+                }
+                t.pattern != null -> {
+                    when (t.pattern) {
+                        "check" -> {
+                            val size = t.patternSize ?: 20
+                            command.add("pattern:checkerboard")
+                            command.add("-scale")
+                            command.add("${size}x${size}!")
+                        }
+                        "grid" -> {
+                            val size = t.patternSize ?: 40
+                            command.add("xc:${t.bgColor}")
+                            command.add("-fill")
+                            command.add("none")
+                            command.add("-stroke")
+                            command.add("black")
+                            command.add("-draw")
+                            val draws = mutableListOf<String>()
+                            // Vertical lines
+                            (size..t.width step size).forEach { x ->
+                                draws.add("line $x,0 $x,${t.height}")
+                            }
+                            // Horizontal lines
+                            (size..t.height step size).forEach { y ->
+                                draws.add("line 0,$y ${t.width},$y")
+                            }
+                            command.add(draws.joinToString(" "))
+                        }
+                        "stripe" -> {
+                            val size = t.patternSize ?: 20
+                            command.add("xc:${t.bgColor}")
+                            command.add("-fill")
+                            command.add("black")
+                            command.add("-draw")
+                            val draws = mutableListOf<String>()
+                            (0..t.width step size).forEach { x ->
+                                draws.add("line $x,0 ${x + size},${t.height}")
+                            }
+                            command.add(draws.joinToString(" "))
+                        }
+                        else -> command.add("xc:${t.bgColor}")
+                    }
+                }
+                else -> command.add("xc:${t.bgColor}")
+            }
+
+            // Apply border if specified
+            if (t.border != null && t.borderColor != null) {
+                command.add("-bordercolor")
+                command.add(t.borderColor)
+                command.add("-border")
+                command.add(t.border.toString())
+            }
+
+            // Add text if specified
+            if (!t.text.isNullOrBlank()) {
+                command.add("-gravity")
+                command.add(t.textAlign ?: "center")
+                command.add("-font")
+                command.add(t.font ?: "Arial")
+                command.add("-pointsize")
+                command.add(t.textSize.toString())
+                command.add("-fill")
+                command.add(t.textColor)
+                command.add("-draw")
+                command.add("text 0,0 '${t.text}'")
+            }
+
+            // Apply shared transforms
+            if (t.grayscale) {
+                command.add("-colorspace")
+                command.add("Gray")
+            }
+
+            if (t.flipH) command.add("-flop")
+            if (t.flipV) command.add("-flip")
+
+            if (t.rotate != null) {
+                command.add("-rotate")
+                command.add(t.rotate.toString())
+            }
+
+            if (t.blurRadius != null && t.blurSigma != null) {
+                command.add("-blur")
+                command.add("${t.blurRadius}x${t.blurSigma}")
+            }
+
+            if (t.sharpen != null) {
+                command.add("-sharpen")
+                command.add("0x${t.sharpen}")
+            }
+
+            if (t.colors != null) {
+                command.add("-colors")
+                command.add(t.colors.toString())
+            }
+
+            if (t.quality != null) {
+                command.add("-quality")
+                command.add(t.quality.toString())
+            }
 
             command.add(outputFile.absolutePath)
 
@@ -259,9 +350,63 @@ object GraphicsMagickImageProcessor {
                 throw RuntimeException("GraphicsMagick failed: $errorOutput")
             }
 
+            // If rounded corners are needed, apply them as a separate operation
+            if (t.radius != null && t.radius > 0) {
+                val maskedFile = File(tempDir, "gm_masked_${UUID.randomUUID()}.png")
+                try {
+                    // Create a mask with rounded corners
+                    val maskCommand = mutableListOf("gm", "convert")
+                    maskCommand.add("-size")
+                    maskCommand.add("${t.width}x${t.height}")
+                    maskCommand.add("xc:white")
+                    maskCommand.add("-draw")
+                    maskCommand.add("circle ${t.width/2},${t.height/2} ${t.width/2},0")
+                    maskCommand.add(maskedFile.absolutePath)
+
+                    // Execute mask creation
+                    val maskProcess = ProcessBuilder(maskCommand)
+                        .redirectErrorStream(true)
+                        .start()
+
+                    maskProcess.inputStream.bufferedReader().use { reader ->
+                        reader.forEachLine { errorOutput.appendLine(it) }
+                    }
+
+                    if (!maskProcess.waitFor(config.timeoutSeconds, TimeUnit.SECONDS) ||
+                        maskProcess.exitValue() != 0) {
+                        throw RuntimeException("Failed to create corner mask: $errorOutput")
+                    }
+
+                    // Compose the original image with the mask
+                    val composeCommand = mutableListOf("gm", "composite")
+                    composeCommand.add("-compose")
+                    composeCommand.add("CopyOpacity")
+                    composeCommand.add(maskedFile.absolutePath)
+                    composeCommand.add(outputFile.absolutePath)
+                    composeCommand.add(outputFile.absolutePath)
+
+                    val composeProcess = ProcessBuilder(composeCommand)
+                        .redirectErrorStream(true)
+                        .start()
+
+                    composeProcess.inputStream.bufferedReader().use { reader ->
+                        reader.forEachLine { errorOutput.appendLine(it) }
+                    }
+
+                    if (!composeProcess.waitFor(config.timeoutSeconds, TimeUnit.SECONDS) ||
+                        composeProcess.exitValue() != 0) {
+                        throw RuntimeException("Failed to apply corner mask: $errorOutput")
+                    }
+
+                } finally {
+                    maskedFile.delete()
+                }
+            }
+
             return outputFile.readBytes()
         } finally {
             outputFile.delete()
         }
     }
+
 }
