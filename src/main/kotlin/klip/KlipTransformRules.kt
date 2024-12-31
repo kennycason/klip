@@ -1,140 +1,115 @@
 package klip
 
-enum class ValidationMode {
-    STRICT,  // throw errors on violations
-    LENIENT  // nullify or reset invalid fields
-}
-
 data class KlipTransformRule(
     val name: String,
     val isValid: (t: KlipTransforms) -> Boolean,
     val errorMessage: (t: KlipTransforms) -> String,
-    val clear: (t: KlipTransforms) -> Unit
 ) {
     override fun toString(): String = name
 }
 
 object KlipTransformRules {
 
-    val dimensionsGteZero = KlipTransformRule(
+    val dimensionGteZero = KlipTransformRule(
         name = "dim gte0",
-        isValid = { it.width > 0 && it.height > 0 },
-        errorMessage = { "Dimensions must be > 0. Got: ${it.width}x${it.height}" },
-        clear = {
-            it.width = 1
-            it.height = 1
-        }
+        isValid = {
+            (it.width != null && it.width!! > 0) && (it.height != null && it.height!! > 0)
+        },
+        errorMessage = { "Dimensions must be > 0. Got: ${it.width}x${it.height}" }
     )
 
-    fun allowedDimensions(allowed: Set<Pair<Int, Int>>) = KlipTransformRule(
+    fun allowedDimensions(allowed: List<Pair<Int, Int>>) = KlipTransformRule(
         name = "dim ${allowed.joinToString(" ") { "${it.first}x${it.second}" }}",
         isValid = { (it.width to it.height) in allowed },
-        errorMessage = { "Allowed dimensions are ${allowed.joinToString(" ") { "${it.first}x${it.second}" }}. Got: ${it.width}x${it.height}" },
-        clear = {
-            val default = allowed.firstOrNull() ?: (1 to 1)
-            it.width = default.first
-            it.height = default.second
-        }
+        errorMessage = { "Allowed dim: ${allowed.joinToString(" ") { "${it.first}x${it.second}" }}. Got: ${it.width}x${it.height}" }
     )
 
-    fun allowedQuality(allowed: Set<Int>) = KlipTransformRule(
+    fun allowedWidth(allowed: List<Int>) = KlipTransformRule(
+        name = "width ${allowed.joinToString(" ")}",
+        isValid = { it.width in allowed },
+        errorMessage = { "Allowed width: $allowed. Got: ${it.width}" }
+    )
+
+    fun allowedHeight(allowed: List<Int>) = KlipTransformRule(
+        name = "height ${allowed.joinToString(" ")}",
+        isValid = { it.height in allowed },
+        errorMessage = { "Allowed height: $allowed. Got: ${it.height}" }
+    )
+
+    fun allowedQuality(allowed: List<Int>) = KlipTransformRule(
         name = "quality ${allowed.joinToString(" ")}",
         isValid = { it.quality == null || it.quality in allowed },
-        errorMessage = { "Allowed qualities are $allowed. Got: ${it.quality}" },
-        clear = {
-            it.quality = null
-        }
+        errorMessage = { "Allowed quality: $allowed. Got: ${it.quality}" }
     )
 
-    fun allowedColors(allowed: Set<Int>) = KlipTransformRule(
+    fun allowedColor(allowed: List<Int>) = KlipTransformRule(
         name = "colors ${allowed.joinToString(" ")}",
         isValid = { it.colors == null || it.colors in allowed },
-        errorMessage = { "Allowed colors are $allowed. Got: ${it.colors}" },
-        clear = {
-            it.colors = null
-        }
+        errorMessage = { "Allowed color: $allowed. Got: ${it.colors}" }
     )
 
-    fun allowedRotate(allowed: Set<Float>) = KlipTransformRule(
+    fun allowedRotate(allowed: List<Float>) = KlipTransformRule(
         name = "rotate ${allowed.joinToString(" ")}",
         isValid = { it.rotate == null || it.rotate in allowed },
-        errorMessage = { "Allowed rotations are $allowed. Got: ${it.rotate}" },
-        clear = {
-            it.rotate = null
-        }
+        errorMessage = { "Allowed rotation: $allowed. Got: ${it.rotate}" }
     )
 
-    fun allowedSharpen(allowed: Set<Float>) = KlipTransformRule(
+    fun allowedSharpen(allowed: List<Float>) = KlipTransformRule(
         name = "sharpen ${allowed.joinToString(" ")}",
         isValid = { it.sharpen == null || it.sharpen in allowed },
-        errorMessage = { "Allowed sharpen values are $allowed. Got: ${it.sharpen}" },
-        clear = {
-            it.sharpen = null
-        }
+        errorMessage = { "Allowed sharpen: $allowed. Got: ${it.sharpen}" },
     )
 
-    fun allowedBlurRadius(allowed: Set<Float>) = KlipTransformRule(
+    fun allowedBlurRadius(allowed: List<Float>) = KlipTransformRule(
         name = "blurRadius ${allowed.joinToString(" ")}",
         isValid = { it.blurRadius == null || it.blurRadius in allowed },
-        errorMessage = { "Allowed blur radii are $allowed. Got: ${it.blurRadius}" },
-        clear = {
-            it.blurRadius = null
-            it.blurSigma = null
-        }
+        errorMessage = { "Allowed blurRadius: $allowed. Got: ${it.blurRadius}" }
     )
 
-    fun allowedBlurSigma(allowed: Set<Float>) = KlipTransformRule(
+    fun allowedBlurSigma(allowed: List<Float>) = KlipTransformRule(
         name = "blurSigma ${allowed.joinToString(" ")}",
         isValid = { it.blurSigma == null || it.blurSigma in allowed },
-        errorMessage = { "Allowed blur sigmas are $allowed. Got: ${it.blurSigma}" },
-        clear = {
-            it.blurRadius = null
-            it.blurSigma = null
-        }
+        errorMessage = { "Allowed blurSigma: $allowed. Got: ${it.blurSigma}" }
     )
 
     fun allowedGrayscale(allowed: Boolean) = KlipTransformRule(
         name = if (allowed) "+grayscale" else "-grayscale",
         isValid = { allowed || !it.grayscale },
-        errorMessage = { "Grayscale is not allowed." },
-        clear = { it.grayscale = false }
+        errorMessage = { "Grayscale is not allowed." }
     )
 
     fun allowedCrop(allowed: Boolean) = KlipTransformRule(
         name = if (allowed) "+crop" else "-crop",
         isValid = { allowed || !it.crop },
-        errorMessage = { "Crop is not allowed." },
-        clear = { it.crop = false }
+        errorMessage = { "Crop is not allowed." }
+    )
+
+    fun allowedFit(allowed: List<Fit>) = KlipTransformRule(
+        name =  "fit ${allowed.joinToString(" ")}",
+        isValid = { it.fit == null || it.fit in allowed },
+        errorMessage = { "Crop is not allowed." }
     )
 
     fun allowedFlipH(allowed: Boolean) = KlipTransformRule(
         name = if (allowed) "+flipH" else "-flipH",
         isValid = { allowed || !it.flipH },
         errorMessage = { "Horizontal flip is not allowed." },
-        clear = { it.flipH = false }
     )
 
     fun allowedFlipV(allowed: Boolean) = KlipTransformRule(
         name = if (allowed) "+flipV" else "-flipV",
         isValid = { allowed || !it.flipV },
-        errorMessage = { "Vertical flip is not allowed." },
-        clear = { it.flipV = false }
+        errorMessage = { "Vertical flip is not allowed." }
     )
 
     fun allowedDither(allowed: Boolean) = KlipTransformRule(
         name = if (allowed) "+dither" else "-dither",
         isValid = { allowed || !it.dither },
         errorMessage = { "Dither is not allowed." },
-        clear = { it.dither = false }
     )
 
     fun parseRules(rulesConfig: String): List<KlipTransformRule> {
         val rules = mutableListOf<KlipTransformRule>()
-        val allowedDimensions = mutableSetOf<Pair<Int, Int>>()
-        val allowedBlur = mutableSetOf<Float>()
-        val allowedQuality = mutableSetOf<Int>()
-        val allowedRotate = mutableSetOf<Float>()
-        val allowedSharpen = mutableSetOf<Float>()
 
         rulesConfig
             .replace("\n", ";")
@@ -158,7 +133,12 @@ object KlipTransformRules {
 
                     // dimensions rule
                     trimmedRule.startsWith("dim") -> {
-                        val dimensions = trimmedRule.removePrefix("dim").trim().split(" ")
+                        val allowedDimensions = mutableListOf<Pair<Int, Int>>()
+                        val dimensions = trimmedRule
+                            .removePrefix("dim")
+                            .trim()
+                            .split(" ")
+
                         dimensions.forEach {
                             val (w, h) = it.split("x").map { it.toInt() }
                             allowedDimensions.add(w to h)
@@ -166,35 +146,55 @@ object KlipTransformRules {
                         rules.add(allowedDimensions(allowedDimensions))
                     }
 
+                    // width rule
+                    trimmedRule.startsWith("width") -> {
+                        rules.add(allowedWidth(parseInts(trimmedRule, prefix = "width")))
+                    }
+
+                    // height rule
+                    trimmedRule.startsWith("height") -> {
+                        rules.add(allowedHeight(parseInts(trimmedRule, prefix = "height")))
+                    }
+
                     // blur rule
                     trimmedRule.startsWith("blur") -> {
-                        val radii = trimmedRule.removePrefix("blur").trim().split(" ").map { it.toFloat() }
-                        allowedBlur.addAll(radii)
-                        rules.add(allowedBlurRadius(allowedBlur))
+                        rules.add(allowedBlurRadius(parseFloats(trimmedRule, prefix = "blur")))
                     }
 
                     // quality rule
                     trimmedRule.startsWith("quality") -> {
-                        val qualities = trimmedRule.removePrefix("quality").trim().split(" ").map { it.toInt() }
-                        allowedQuality.addAll(qualities)
-                        rules.add(allowedQuality(allowedQuality))
+                        rules.add(allowedQuality(parseInts(trimmedRule, "quality")))
+                    }
+
+                    // fit rule
+                    trimmedRule.startsWith("fit") -> {
+                        rules.add(allowedFit(parseFit(trimmedRule)))
                     }
 
                     // rotate rule
                     trimmedRule.startsWith("rotate") -> {
-                        val angles = trimmedRule.removePrefix("rotate").trim().split(" ").map { it.toFloat() }
-                        allowedRotate.addAll(angles)
-                        rules.add(allowedRotate(allowedRotate))
+                        rules.add(allowedRotate(parseFloats(trimmedRule, prefix = "rotate")))
                     }
 
                     // sharpen rule
                     trimmedRule.startsWith("sharpen") -> {
-                        val sharpens = trimmedRule.removePrefix("sharpen").trim().split(" ").map { it.toFloat() }
-                        allowedSharpen.addAll(sharpens)
-                        rules.add(allowedSharpen(allowedSharpen))
+                        rules.add(allowedSharpen(parseFloats(trimmedRule, prefix = "sharpen")))
                     }
                 }
             }
         return rules
     }
+
+    private fun parseFit(rule: String): List<Fit> {
+        return rule.removePrefix("fit").trim().split(" ").map { Fit.valueOf(it) }
+    }
+
+    private fun parseFloats(rule: String, prefix: String): List<Float> {
+        return rule.removePrefix(prefix).trim().split(" ").map { it.toFloat() }
+    }
+
+    private fun parseInts(rule: String, prefix: String): List<Int> {
+        return rule.removePrefix(prefix).trim().split(" ").map { it.toInt() }
+    }
+
 }

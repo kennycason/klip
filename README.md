@@ -13,19 +13,17 @@ It supports caching, resizing, cropping, grayscale filters, and rotation via HTT
 
 ## Environment Configuration (Env)
 
-| Section    | Variable                     | Type    | Default                    | Required | Description                                                                   |
-|------------|------------------------------|---------|----------------------------|----------|-------------------------------------------------------------------------------|
-| **LOG**    | `KLIP_LOG_LEVEL`             | Enum    | `INFO`                     | No       | `TRACE`, `INFO`, `DEBUG`, `WARN`, `ERROR`                                     |
-| **HTTP**   | `KLIP_HTTP_PORT`             | Int     | `8080`                     | No       | The HTTP port the server listens on.                                          |
-| **AWS**    | `KLIP_AWS_REGION`            | String  | -                          | Yes      | AWS region for S3 bucket (e.g., `us-west-2`).                                 |
-| **AWS**    | `KLIP_S3_BUCKET`             | String  | -                          | Yes      | The S3 bucket name where source images are stored.                            |
-| **Cache**  | `KLIP_CACHE_ENABLED`         | Boolean | True                       | No       | If false, disable image cache.                                                |
-| **Cache**  | `KLIP_CACHE_BUCKET`          | String  | *Same as `KLIP_S3_BUCKET`* | No       | Used if using different S3 bucket for caching.                                |
-| **Cache**  | `KLIP_CACHE_FOLDER`          | String  | `_cache/`                  | No       | Prefix for cached files. Stored within the cache bucket.                      |
-|  **Rules** | `KLIP_RULES`                 | String  | "" (empty)                 | No       | Inline rule definitions separated by ; (e.g., +flipV;-flipH;dim 32x32 64x64). |
-| **Rules**  | `KLIP_RULES_FILE`            | String  | -                          | No       | Path to a rules file with one rule per line. Overrides KLIP_RULES.            |
-| **Rules**  | `KLIP_RULES_VALIDATION_MODE` | Enum    | `STRICT`                   | No       | `LENIENT` ignore errors, `STRICT` throw exceptions on errors.                 |
-
+| Section   | Variable             | Type    | Default                    | Required | Description                                                                   |
+|-----------|----------------------|---------|----------------------------|----------|-------------------------------------------------------------------------------|
+| **LOG**   | `KLIP_LOG_LEVEL`     | Enum    | `INFO`                     | No       | `TRACE`, `INFO`, `DEBUG`, `WARN`, `ERROR`                                     |
+| **HTTP**  | `KLIP_HTTP_PORT`     | Int     | `8080`                     | No       | The HTTP port the server listens on.                                          |
+| **AWS**   | `KLIP_AWS_REGION`    | String  | -                          | Yes      | AWS region for S3 bucket (e.g., `us-west-2`).                                 |
+| **AWS**   | `KLIP_S3_BUCKET`     | String  | -                          | Yes      | The S3 bucket name where source images are stored.                            |
+| **Cache** | `KLIP_CACHE_ENABLED` | Boolean | True                       | No       | If false, disable image cache.                                                |
+| **Cache** | `KLIP_CACHE_BUCKET`  | String  | *Same as `KLIP_S3_BUCKET`* | No       | Used if using different S3 bucket for caching.                                |
+| **Cache** | `KLIP_CACHE_FOLDER`  | String  | `_cache/`                  | No       | Prefix for cached files. Stored within the cache bucket.                      |
+| **Rules** | `KLIP_RULES`         | String  | "" (empty)                 | No       | Inline rule definitions separated by ; (e.g., +flipV;-flipH;dim 32x32 64x64). |
+| **Rules** | `KLIP_RULES_FILE`    | String  | -                          | No       | Path to a rules file with one rule per line. Overrides KLIP_RULES.            |
 
 ---
 
@@ -39,7 +37,6 @@ KLIP_S3_BUCKET=cdn.klip.com \
 KLIP_CACHE_ENABLED=true \
 KLIP_CACHE_BUCKET=cdn.klip.com \
 KLIP_CACHE_FOLDER=.cache/ \
-KLIP_RULES_VALIDATION_MODE=STRICT \
 KLIP_RULES="+flipV;-flipH;dim 32x32 64x64 256x256" \
 java -jar build/libs/klip-all.jar
 ```
@@ -71,7 +68,14 @@ GET http://localhost:8080/img/properties/1/04c08449e126.png
 ## Resize Image
 
 ```
-GET /img/{width}x{height}/{path/to/image}
+GET /img/{path/to/image}?w={width}&h={height}
+
+# Set width and height independently.
+GET /img/{path/to/image}?w={width}
+GET /img/{path/to/image}?h={height}
+
+# Dimension syntax
+GET /img/{path/to/image}?d={width}x{height}
 ```
 
 Resize the image to the specified width and height.
@@ -80,23 +84,61 @@ Query Parameters:
 
 | Parameter | Type | Required | Default | Description                |
 |-----------|------|----------|---------|----------------------------|
-| `width`   | Int  | Yes      | -       | Width of the output image  |
-| `height`  | Int  | Yes      | -       | Height of the output image |
+| `width`   | Int  | Optional | -       | Width of the output image  |
+| `height`  | Int  | Optional | -       | Height of the output image |
 
 Example:
 
 ```bash
-GET http://localhost:8080/img/250x250/properties/1/04c08449e126.png
+GET http://localhost:8080/img/properties/1/04c08449e126.png?d=640x480
+GET http://localhost:8080/img/properties/1/04c08449e126.png?w=640&h480
 ```
 
 ![Resized Image](https://github.com/kennycason/klip/blob/main/images/resized.png?raw=true)
+
+## Fit Modes
+
+Control how the image fits within the specified dimensions.
+
+```bash
+GET /img/{path/to/image}?w={width}&h={height}&fit={mode}
+```
+
+| Parameter | Type   | Required | Default | Description                                                                    |
+|-----------|--------|----------|---------|--------------------------------------------------------------------------------|
+| `fit`     | String | Optional | -       | How the image should fit within dimensions. Values: `contain`, `cover`, `fill` |
+
+Fit Modes Explained:
+
+contain: Preserves aspect ratio while ensuring image fits within specified dimensions
+
+```bash
+GET /img/photo.jpg?w=800&h=600&fit=contain
+```
+
+cover: Fills entire dimensions while preserving aspect ratio, cropping excess
+
+```bash
+GET /img/photo.jpg?w=800&h=600&fit=cover
+```
+
+fill: Stretches or squishes image to exactly fit dimensions
+
+```bash
+GET /img/photo.jpg?w=800&h=600&fit=fill
+```
+
+Default Behavior:
+
+- With both width and height: Acts as fill
+- With single dimension: Acts as contain
 
 ---
 
 ## Quality Adjustment
 
 ```
-GET /img/{width}x{height}/{path/to/image}?quality=75
+GET /img/{path/to/image}?quality=75
 ```
 
 Adjust the image quality for compression and size optimization.
@@ -114,15 +156,17 @@ Examples:
 
 ```bash
 # High Quality (Default)
-GET http://localhost:8080/img/250x250/properties/1/04c08449e126.png?quality=100
+GET http://localhost:8080/img/properties/1/04c08449e126.png?quality=100
 # Medium-High Quality
-GET http://localhost:8080/img/1301x781/properties/102/05013ad4469e00a7aed9596bc37af74e.jpg?quality=75
+GET http://localhost:8080/img/properties/102/05013ad4469e00a7aed9596bc37af74e.jpg?quality=75
 # Medium Quality
-GET http://localhost:8080/img/1301x781/properties/102/05013ad4469e00a7aed9596bc37af74e.jpg?quality=50
+GET http://localhost:8080/img/properties/102/05013ad4469e00a7aed9596bc37af74e.jpg?quality=50
 # Low Quality
-GET http://localhost:8080/img/1301x781/properties/102/05013ad4469e00a7aed9596bc37af74e.jpg?quality=25
+GET http://localhost:8080/img/properties/102/05013ad4469e00a7aed9596bc37af74e.jpg?quality=25
 # Lower Quality
-GET http://localhost:8080/img/1301x781/properties/102/05013ad4469e00a7aed9596bc37af74e.jpg?quality=10
+GET http://localhost:8080/img/properties/102/05013ad4469e00a7aed9596bc37af74e.jpg?quality=10
+# Combined with resizing
+GET http://localhost:8080/img/properties/102/05013ad4469e00a7aed9596bc37af74e.jpg?quality=10&w1301h781
 ```
 
 ### Image Comparison (click to enlarge)
@@ -142,7 +186,7 @@ GET http://localhost:8080/img/1301x781/properties/102/05013ad4469e00a7aed9596bc3
 ## Center Crop
 
 ```
-GET /img/{width}x{height}/{path/to/image}?crop
+GET /img/{path/to/image}?crop?w={width}&h={height}
 ```
 
 Crop the image from the center to the specified width and height.
@@ -156,7 +200,7 @@ Query Parameters:
 Example:
 
 ```bash
-GET http://localhost:8080/img/250x250/properties/1/04c08449e126.png?crop
+GET http://localhost:8080/img/properties/1/04c08449e126.png?crop&w=250&h=250
 ```
 
 ![Cropped Image](https://github.com/kennycason/klip/blob/main/images/cropped.png?raw=true)
@@ -166,7 +210,7 @@ GET http://localhost:8080/img/250x250/properties/1/04c08449e126.png?crop
 ## Grayscale Filter
 
 ```
-GET /img/{width}x{height}/{path/to/image}?grayscale
+GET /img/{path/to/image}?grayscale
 ```
 
 Convert the image to grayscale while resizing to the specified dimensions.
@@ -190,7 +234,7 @@ GET http://localhost:8080/img/250x250/properties/1/04c08449e126.png?grayscale
 ## Flip Horizontally
 
 ```
-GET /img/{width}x{height}/{path/to/image}?flipH
+GET /img/{path/to/image}?flipH
 ```
 
 Flip the image horizontally (left-to-right).
@@ -204,7 +248,7 @@ Query Parameters:
 Example:
 
 ```bash
-GET http://localhost:8080/img/250x250/properties/1/04c08449e126.png?flipH
+GET http://localhost:8080/img/properties/1/04c08449e126.png?flipH
 ```
 
 ![Flipped Horizontally](https://github.com/kennycason/klip/blob/main/images/resized_fliph.png?raw=true)
@@ -214,7 +258,7 @@ GET http://localhost:8080/img/250x250/properties/1/04c08449e126.png?flipH
 ## Flip Vertically
 
 ```
-GET /img/{width}x{height}/{path/to/image}?flipV
+GET /img/{path/to/image}?flipV
 ```
 
 Flip the image vertically (top-to-bottom).
@@ -228,7 +272,7 @@ Query Parameters:
 Example - Flip vertically:
 
 ```bash
-GET http://localhost:8080/img/250x250/properties/1/04c08449e126.png?flipV
+GET http://localhost:8080/img/properties/1/04c08449e126.png?flipV
 ```
 
 ![Flipped Vertically](https://github.com/kennycason/klip/blob/main/images/resized_flipv.png?raw=true)
@@ -236,7 +280,7 @@ GET http://localhost:8080/img/250x250/properties/1/04c08449e126.png?flipV
 Example - Flip both horizontally and vertically:
 
 ```bash
-GET http://localhost:8080/img/250x250/properties/1/04c08449e126.png?flipH&flipV
+GET http://localhost:8080/img/properties/1/04c08449e126.png?flipH&flipV
 ```
 
 ![Flipped Both](https://github.com/kennycason/klip/blob/main/images/resized_fliph_flipv.png?raw=true)
@@ -246,7 +290,7 @@ GET http://localhost:8080/img/250x250/properties/1/04c08449e126.png?flipH&flipV
 ## Rotate Image
 
 ```
-GET /img/{width}x{height}/{path/to/image}?rotate=45
+GET /img/{path/to/image}?rotate=45
 ```
 
 Rotate the image by the specified degrees (clockwise).
@@ -260,7 +304,7 @@ Query Parameters:
 Example - Rotate image 45 degrees:
 
 ```bash
-GET http://localhost:8080/img/250x250/properties/1/04c08449e126.png?rotate=45
+GET http://localhost:8080/img/properties/1/04c08449e126.png?rotate=45
 ```
 
 ![Rotated Image](https://github.com/kennycason/klip/blob/main/images/resized_rotated45.png?raw=true)
@@ -270,7 +314,8 @@ GET http://localhost:8080/img/250x250/properties/1/04c08449e126.png?rotate=45
 ## Blur Image
 
 ```
-GET /img/{blurRadius}x{blurSigma}/{path/to/image}?blur=0x2
+GET /img/{path/to/image}?blur={radius}x{sigma}
+GET /img/{path/to/image}?blur={blur}
 ```
 
 Apply a **Gaussian blur** to the image to soften details.
@@ -299,13 +344,13 @@ Query Parameters:
 Example - Mild blur:
 
 ```bash
-GET http://localhost:8080/img/250x250/properties/1/04c08449e126.png?blur=0x2
+GET http://localhost:8080/img/properties/1/04c08449e126.png?blur=0x2
 ```
 
 Example: Simple, heavy blur
 
 ```bash
-GET http://localhost:8080/img/250x250/properties/1/04c08449e126.png?blur=7
+GET http://localhost:8080/img/properties/1/04c08449e126.png?blur=7
 ```
 
 ![Blurred Image](https://github.com/kennycason/klip/blob/main/images/blur0x2.png?raw=true)
@@ -315,7 +360,7 @@ GET http://localhost:8080/img/250x250/properties/1/04c08449e126.png?blur=7
 ## Sharpen Image
 
 ```
-GET /img/{width}x{height}/{path/to/image}?sharpen=2.0
+GET /img/{path/to/image}?sharpen=2.0
 ```
 
 Sharpen the image to enhance details and make edges clearer.
@@ -332,7 +377,7 @@ Query Parameters:
 Example - Mild blur:
 
 ```bash
-GET http://localhost:8080/img/250x250/properties/1/04c08449e126.png?sharpen=2.0
+GET http://localhost:8080/img/properties/1/04c08449e126.png?sharpen=2.0
 ```
 
 ![Blurred Image](https://github.com/kennycason/klip/blob/main/images/sharpen2.0.png?raw=true)
@@ -342,7 +387,7 @@ GET http://localhost:8080/img/250x250/properties/1/04c08449e126.png?sharpen=2.0
 ## Color Adjustment
 
 ```
-GET /img/{width}x{height}/{path/to/image}?colors=16
+GET /img/{path/to/image}?colors=16
 ```
 
 Reduce the number of colors in the image to simplify or stylize it.
@@ -356,7 +401,7 @@ Query Parameters:
 Example - 10 colors:
 
 ```bash
-GET http://localhost:8080/img/250x250/properties/1/04c08449e126.png?colors=10
+GET http://localhost:8080/img/properties/1/04c08449e126.png?colors=10
 ```
 
 ![Blurred Image](https://github.com/kennycason/klip/blob/main/images/colors10.png?raw=true)
@@ -366,7 +411,7 @@ GET http://localhost:8080/img/250x250/properties/1/04c08449e126.png?colors=10
 ## Dithering
 
 ```
-GET /img/{width}x{height}/{path/to/image}?dither
+GET /img/{path/to/image}?dither
 ```
 
 Enable or disable dithering to improve color approximation when reducing colors.
@@ -380,7 +425,7 @@ Query Parameters:
 Example - 10 colors:
 
 ```bash
-GET http://localhost:8080/img/250x250/properties/1/04c08449e126.png?dither
+GET http://localhost:8080/img/properties/1/04c08449e126.png?dither
 ```
 
 ---
@@ -388,7 +433,7 @@ GET http://localhost:8080/img/250x250/properties/1/04c08449e126.png?dither
 ## Combine Filters
 
 ```
-GET /img/{width}x{height}/{path/to/image}?grayscale&crop&rotate=90
+GET /img/{path/to/image}?grayscale&crop&rotate=90
 ```
 
 Apply multiple transformations in a single request.
@@ -396,7 +441,7 @@ Apply multiple transformations in a single request.
 Example:
 
 ```bash
-GET http://localhost:8080/img/250x250/properties/1/04c08449e126.png?grayscale&crop&rotate=90
+GET http://localhost:8080/img/properties/1/04c08449e126.png?w=250&h=250&grayscale&crop&rotate=90
 ```
 
 ![Combined Filters](https://github.com/kennycason/klip/blob/main/images/combined_transforms.png?raw=true)
@@ -515,15 +560,7 @@ rotate 0 90 180
 | `rotate {values}`  | Allow specific rotation angles in degrees.  | `rotate 0 90 180`         |
 | `sharpen {values}` | Allow specific sharpen values.              | `sharpen 0.5 1.0 2.0`     |
 | `colors {values}`  | Allow specific color palette sizes.         | `colors 16 32 64 128`     |
-
----
-
-### Behavior Modes
-
-Klip supports **two validation modes** for rules:
-
-- **STRICT** - Throws an error when a rule is violated (default).
-- **LENIENT** - Resets invalid values to defaults (e.g., nullifies transformations).
+| `fit {values}`     | Allow specific fit values .                 | `fit cover contain`       |
 
 ---
 
@@ -571,10 +608,46 @@ KLIP_RULES="+flipV;-flipH;dim 32x32 64x64 128x128" ./gradlew run
 
 ---
 
+## Generate Placeholder Image
+
+```bash
+GET /placeholder/{width}x{height}
+```
+
+Generate a placeholder image with custom dimensions, background color, and optional text overlay.
+
+Query Parameters:
+
+| Parameter   | Type   | Required | Default | Description                         |
+|-------------|--------|----------|---------|-------------------------------------|
+| `bgColor`   | String | Optional | gray    | Background color (name or hex code) |
+| `textcolor` | String | Optional | white   | Text color (name or hex code)       |
+| `textSize`  | Int    | Optional | 20      | Font size for the text              |
+| `text`      | String | Optional | -       | Text to display on the placeholder  |
+
+Examples:
+
+```bash
+# Basic gray placeholder
+GET /placeholder/640x480
+
+# Blue placeholder with text
+GET /placeholder/200x100?bgColor=blue&text=Hello
+
+# Custom colors and font size
+GET /placeholder/400x300?bgColor=%23FF0000&textColor=white&text=Preview&textSize=30
+
+# Using hex colors
+GET /placeholder/300x200?bgColor=%23336699&text=Loading
+
+![Placeholder](https://github.com/kennycason/klip/blob/main/images/placeholder_320x240_hello.png?raw=true)
+
+
 ## Errors
 
-```shell
-GET /img/10x9/properties/1/04c08449e1261fedc2eb1a6a99245531.png
+```bash
+GET /img/properties/1/04c08449e1261fedc2eb1a6a99245531.png?w=10&h=9
+GET /img/properties/1/04c08449e1261fedc2eb1a6a99245531.png?d=10x9
 ```
 
 422 - Unprocessable Entity
@@ -593,7 +666,7 @@ GET /img/10x9/properties/1/04c08449e1261fedc2eb1a6a99245531.png
 - Gradle
 - GraphicsMagick
 
-```shell
+```bash
 brew install graphicsmagick
 ```
 
@@ -603,13 +676,13 @@ brew install graphicsmagick
 
 ## Build the project
 
-```shell
+```bash
 ./gradlew clean build
 ```
 
 ## Create Dockerfile from template (one-time step)
 
-```shell
+```bash
 cp Dockerfile.template Dockerfile
 ```
 
@@ -617,20 +690,20 @@ Afterward set the `ENV` variables as needed.
 
 ## Build Docker image
 
-```shell
+```bash
 docker build --platform linux/amd64 -t klip-prod:latest .
 ```
 
 ## Tag and Deploy image
 
-```shell
+```bash
 docker tag klip-prod:latest <AWS_ACCOUNT_ID>.dkr.ecr.<AWS_REGION>.amazonaws.com/klip-prod:latest
 docker push <AWS_ACCOUNT_ID>.dkr.ecr.<AWS_REGION>.amazonaws.com/klip-prod:latest
 ```
 
 ## Force deploy of Klip
 
-```shell
+```bash
 aws ecs update-service \
   --cluster klip-prod-cluster \
   --service klip-prod-service \
@@ -639,7 +712,7 @@ aws ecs update-service \
 
 ## Tail Logs
 
-```shell
+```bash
 aws logs tail /ecs/klip-prod --follow
 ```
 
@@ -652,7 +725,7 @@ This is meant as a starting point.
 
 ## Setup
 
-```shell
+```bash
 cd terraform/stacks/
 cp prod-template prod
 ```

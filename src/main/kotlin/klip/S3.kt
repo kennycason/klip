@@ -34,7 +34,7 @@ object S3 {
         env: Env,
         cacheKey: String
     ): KlipImage? {
-        val cacheBucket = env.cache.cacheBucket ?: env.aws.s3Bucket
+        val cacheBucket = env.cache.cacheBucket
         val cachePath = "${env.cache.cachePrefix}$cacheKey"
 
         return try {
@@ -42,7 +42,7 @@ object S3 {
                 this.bucket = cacheBucket
                 this.key = cachePath
             }
-            val extension = getFileExtension(cacheKey) // <-- implement
+            val extension = getFileExtension(cacheKey)
             s3Client.getObject(request) {
                 val bytes = (it.body as ByteStream).toByteArray()
                 val contentType = getContentTypeByExtension(extension)
@@ -60,10 +60,12 @@ object S3 {
         cacheKey: String,
         data: ByteArray
     ) {
-        val cacheBucket = env.cache.cacheBucket ?: env.aws.s3Bucket
+        val cacheBucket = env.cache.cacheBucket
         val cachePath = "${env.cache.cachePrefix}$cacheKey"
 
-        val extension = getFileExtension(cacheKey) // <-- implement
+        logger.info { "Writing $cacheKey to cache."}
+
+        val extension = getFileExtension(cacheKey)
         val request = aws.sdk.kotlin.services.s3.model.PutObjectRequest {
             bucket = cacheBucket
             key = cachePath
@@ -81,9 +83,12 @@ object S3 {
         val extension = getFileExtension(t.path)
 
         // only include active transforms in key
-        val params = mutableListOf("${t.width}x${t.height}")
+        val params = mutableListOf<String>()
+        if (t.width != null) params.add("w${t.width}")
+        if (t.height != null) params.add("h${t.height}")
         if (t.blurRadius != null && t.blurSigma != null) params.add("b${ftos(t.blurRadius!!)}x${ftos(t.blurSigma!!)}")
         if (t.crop) params.add("c1")
+        if (t.fit != null) params.add(t.fit.toString().lowercase())
         if (t.colors != null) params.add("c${t.colors}") // colors can never be 1, and will not collide with c1
         if (t.dither) params.add("d1")
         if (t.grayscale) params.add("g1")

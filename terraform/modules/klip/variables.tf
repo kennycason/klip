@@ -52,11 +52,31 @@ variable "klip_rules_file" {
   type = string
 }
 
-variable "klip_rules_validation_mode" {
-  type    = string
-  default = "STRICT"
+
+variable "klip_gm_timeout_seconds" {
+  type = string
+  default = "30"
 }
 
+variable "klip_gm_memory_limit" {
+  type = string
+  default = "256MB"
+}
+
+variable "klip_gm_map_limit" {
+  type = string
+  default = "512MB"
+}
+
+variable "klip_gm_disk_limit" {
+  type = string
+  default = "1GB"
+}
+
+variable "klip_gm_pool_size" {
+  type = string
+  default = ""  # defaults to available processors if not set
+}
 
 
 variable "vpc_id" {

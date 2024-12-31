@@ -12,7 +12,13 @@ locals {
     s3_cache_bucket  = "cdn.klip.com"
     s3_cache_folder  = "_cache/"
     rules            = ""
-    rules_file       = "", rules_validation_mode = "STRICT"
+    rules_file       = ""
+    # GraphicsMagick config
+    gm_timeout_seconds = "30"
+    gm_memory_limit    = "128MB"
+    gm_map_limit      = "256MB"
+    gm_disk_limit     = "512GB"
+    gm_pool_size      = ""  # defaults to available processors if not set
   }
   fargate_cpu     = 2048
   fargate_memory  = 2048

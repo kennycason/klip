@@ -231,7 +231,11 @@ resource "aws_ecs_task_definition" "klip_task" {
         { name = "KLIP_CACHE_FOLDER", value = var.klip_s3_cache_folder },
         { name = "KLIP_RULES", value = var.klip_rules },
         { name = "KLIP_RULES_FILE", value = var.klip_rules_file },
-        { name = "KLIP_RULES_VALIDATION_MODE", value = var.klip_rules_validation_mode },
+        { name = "KLIP_GM_TIMEOUT_SECONDS", value = var.klip_gm_timeout_seconds },
+        { name = "KLIP_GM_MEMORY_LIMIT", value = var.klip_gm_memory_limit },
+        { name = "KLIP_GM_MAP_LIMIT", value = var.klip_gm_map_limit },
+        { name = "KLIP_GM_DISK_LIMIT", value = var.klip_gm_disk_limit },
+        { name = "KLIP_GM_POOL_SIZE", value = var.klip_gm_pool_size },
       ]
 
       portMappings = [

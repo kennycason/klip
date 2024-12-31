@@ -1,6 +1,7 @@
 package klip
 
 import io.ktor.http.parametersOf
+import io.ktor.server.plugins.BadRequestException
 import strikt.api.expectThat
 import strikt.assertions.*
 import java.io.File
@@ -12,7 +13,7 @@ class KlipTransformsParsingTest {
     @Test
     fun `parse valid parameters with arity 0`() {
         val params = parametersOf(
-            "size" to listOf("100x200"),
+            "d" to listOf("100x200"),
             "flipV" to listOf(), // arity 0
             "flipH" to listOf(),
             "grayscale" to listOf(),
@@ -34,7 +35,7 @@ class KlipTransformsParsingTest {
     @Test
     fun `parse valid parameters with arity 1`() {
         val params = parametersOf(
-            "size" to listOf("150x250"),
+            "d" to listOf("150x250"),
             "flipV" to listOf("1"), // arity 1
             "flipH" to listOf("true"),
             "grayscale" to listOf("1"),
@@ -54,25 +55,26 @@ class KlipTransformsParsingTest {
     }
 
     @Test
-    fun `parse missing size throws exception`() {
+    fun `conflicting w h and d filters size throws exception`() {
         val params = parametersOf(
-            "flipV" to listOf("true")
+            "w" to listOf("100"),
+            "d" to listOf("100x100"),
         )
 
-        val exception = assertFailsWith<IllegalArgumentException> {
+        val exception = assertFailsWith<BadRequestException> {
             KlipTransforms.from(params)
         }
 
-        expectThat(exception).get { message }.isEqualTo("Invalid dimension format, expected {width}x{height}")
+        expectThat(exception).get { message }.isEqualTo("Conflicting dimensions specified. Use either 'w'/'h' or 'd', not both.")
     }
 
     @Test
     fun `parse invalid width or height throws exception`() {
         val params = parametersOf(
-            "size" to listOf("abcx100") // Invalid width
+            "d" to listOf("abcx100") // Invalid width
         )
 
-        val exception = assertFailsWith<IllegalArgumentException> {
+        val exception = assertFailsWith<BadRequestException> {
             KlipTransforms.from(params)
         }
 
@@ -80,35 +82,23 @@ class KlipTransformsParsingTest {
     }
 
     @Test
-    fun `parse invalid rotate throws exception in strict mode`() {
+    fun `parse invalid rotate throws exception`() {
         val params = parametersOf(
-            "size" to listOf("50x50"),
+            "d" to listOf("50x50"),
             "rotate" to listOf("invalid") // Invalid rotation
         )
 
-        val exception = assertFailsWith<NumberFormatException> {
-            KlipTransforms.from(params, ValidationMode.STRICT)
+        val exception = assertFailsWith<BadRequestException> {
+            KlipTransforms.from(params)
         }
 
-        expectThat(exception).get { message }.isEqualTo("For input string: \"invalid\"")
-    }
-
-    @Test
-    fun `parse invalid rotate nullifies in lenient mode`() {
-        val params = parametersOf(
-            "size" to listOf("50x50"),
-            "rotate" to listOf("invalid") // Invalid rotation
-        )
-
-        val transforms = KlipTransforms.from(params, ValidationMode.LENIENT)
-
-        expectThat(transforms).get { rotate }.isNull()
+        expectThat(exception).get { message }.isEqualTo("Failed to parse decimal for key rotate=invalid")
     }
 
     @Test
     fun `parse blur with radius only`() {
         val params = parametersOf(
-            "size" to listOf("200x200"),
+            "d" to listOf("200x200"),
             "blur" to listOf("2.5") // Radius only
         )
 
@@ -123,7 +113,7 @@ class KlipTransformsParsingTest {
     @Test
     fun `parse blur with radius and sigma`() {
         val params = parametersOf(
-            "size" to listOf("200x200"),
+            "d" to listOf("200x200"),
             "blur" to listOf("3x1.5") // Radius and sigma
         )
 
@@ -136,38 +126,23 @@ class KlipTransformsParsingTest {
     }
 
     @Test
-    fun `parse invalid blur throws exception in strict mode`() {
+    fun `parse invalid blur throws exception`() {
         val params = parametersOf(
-            "size" to listOf("200x200"),
+            "d" to listOf("200x200"),
             "blur" to listOf("invalid") // Invalid format
         )
 
-        val exception = assertFailsWith<NumberFormatException> {
-            KlipTransforms.from(params, ValidationMode.STRICT)
+        val exception = assertFailsWith<BadRequestException> {
+            KlipTransforms.from(params)
         }
 
-        expectThat(exception).get { message }.isEqualTo("For input string: \"invalid\"")
-    }
-
-    @Test
-    fun `parse invalid blur nullifies in lenient mode`() {
-        val params = parametersOf(
-            "size" to listOf("200x200"),
-            "blur" to listOf("invalid") // Invalid format
-        )
-
-        val transforms = KlipTransforms.from(params, ValidationMode.LENIENT)
-
-        expectThat(transforms).and {
-            get { blurRadius }.isNull()
-            get { blurSigma }.isNull()
-        }
+        expectThat(exception).get { message }.isEqualTo("Failed to parse blur. blur=[1,10] or blur={radius}x{sigma}")
     }
 
     @Test
     fun `parse colors within valid range`() {
         val params = parametersOf(
-            "size" to listOf("200x200"),
+            "d" to listOf("200x200"),
             "colors" to listOf("256") // Max valid value
         )
 
@@ -179,26 +154,25 @@ class KlipTransformsParsingTest {
     @Test
     fun `parse colors outside valid range throws exception`() {
         val params = parametersOf(
-            "size" to listOf("200x200"),
+            "d" to listOf("200x200"),
             "colors" to listOf("300") // Invalid value
         )
 
         val exception = assertFailsWith<IllegalArgumentException> {
             KlipTransforms.from(
                 params,
-                ValidationMode.STRICT,
-                rules = listOf(KlipTransformRules.allowedColors(setOf(16, 32, 64, 256)))
+                rules = listOf(KlipTransformRules.allowedColor(listOf(16, 32, 64, 256)))
             )
         }
 
         expectThat(exception).get { message }
-            .isEqualTo("Allowed colors are [16, 32, 64, 256]. Got: 300")
+            .isEqualTo("Allowed color: [16, 32, 64, 256]. Got: 300")
     }
 
     @Test
     fun `parse missing optional parameters`() {
         val params = parametersOf(
-            "size" to listOf("100x100")
+            "d" to listOf("100x100")
         )
 
         val transforms = KlipTransforms.from(params)
@@ -223,7 +197,7 @@ class KlipTransformsParsingTest {
         val rules = KlipTransformRules.parseRules(rulesFile.readText())
 
         val params = parametersOf(
-            "size" to listOf("128x128"),
+            "d" to listOf("128x128"),
             "quality" to listOf("50"),
             "rotate" to listOf("45"),
 //            "blur" to listOf("5x2.5"),
@@ -235,7 +209,6 @@ class KlipTransformsParsingTest {
         val exception = assertFailsWith<IllegalArgumentException> {
             KlipTransforms.from(
                 parameters = params,
-                mode = ValidationMode.STRICT,
                 rules = rules
             )
         }

@@ -9,6 +9,17 @@ import kotlin.test.fail
 class CacheKeyTest {
     @Test
     fun `test cache key generation`() {
+        // flipH but no height
+        expectThat(
+            generateCacheKey(
+                KlipTransforms(
+                    path = "properties/1/0.jpeg", width = 200,
+                    flipH = true,
+                    flipV = true
+                )
+            )
+        ).isEqualTo("properties/1/0-w200h1v1.jpeg")
+
         // grayscale, crop, rotate
         expectThat(
             generateCacheKey(
@@ -19,7 +30,7 @@ class CacheKeyTest {
                     rotate = 90.0f
                 )
             )
-        ).isEqualTo("properties/1/0-100x100c1g1r90.png")
+        ).isEqualTo("properties/1/0-w100h100c1g1r90.png")
 
         // some parameters omitted
         expectThat(
@@ -29,7 +40,7 @@ class CacheKeyTest {
                     grayscale = true
                 )
             )
-        ).isEqualTo("properties/1/0-200x300g1.jpeg")
+        ).isEqualTo("properties/1/0-w200h300g1.jpeg")
 
         // flipH +flipV
         expectThat(
@@ -40,7 +51,7 @@ class CacheKeyTest {
                     flipV = true
                 )
             )
-        ).isEqualTo("properties/1/0-200x300h1v1.jpeg")
+        ).isEqualTo("properties/1/0-w200h300h1v1.jpeg")
 
         // quality
         expectThat(
@@ -50,7 +61,7 @@ class CacheKeyTest {
                     quality = 64
                 )
             )
-        ).isEqualTo("properties/1/0-50x50q64.bmp")
+        ).isEqualTo("properties/1/0-w50h50q64.bmp")
 
         // blur
         expectThat(
@@ -61,7 +72,7 @@ class CacheKeyTest {
                     blurSigma = 3.5f
                 )
             )
-        ).isEqualTo("properties/1/0-50x50b1x3.5.bmp")
+        ).isEqualTo("properties/1/0-w50h50b1x3.5.bmp")
 
         // combine sharpen, dither, colors.
         expectThat(
@@ -73,17 +84,26 @@ class CacheKeyTest {
                     colors = 16
                 )
             )
-        ).isEqualTo("properties/1/0-50x50c16d1s2.bmp")
+        ).isEqualTo("properties/1/0-w50h50c16d1s2.bmp")
 
-
-        // no transformations
+        // test fit
         expectThat(
             generateCacheKey(
                 KlipTransforms(
-                    path = "properties/1/0.bmp", width = 50, height = 50,
+                    path = "properties/1/0.jpeg",
+                    fit = Fit.COVER
                 )
             )
-        ).isEqualTo("properties/1/0-50x50.bmp")
+        ).isEqualTo("properties/1/0-cover.jpeg")
+
+        // only a height transform
+        expectThat(
+            generateCacheKey(
+                KlipTransforms(
+                    path = "properties/1/0.bmp", height = 50,
+                )
+            )
+        ).isEqualTo("properties/1/0-h50.bmp")
     }
 
     @Test
@@ -95,6 +115,6 @@ class CacheKeyTest {
                     rotate = 90.3821f
                 )
             )
-        ).isEqualTo("properties/1/0-100x100r90.38.png")
+        ).isEqualTo("properties/1/0-w100h100r90.38.png")
     }
 }

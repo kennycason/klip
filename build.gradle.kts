@@ -34,6 +34,7 @@ dependencies {
     // Kotlinx Serialization
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-core")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core")
 
     // Logging
     implementation("org.apache.logging.log4j:log4j-core:$log4jVersion")
@@ -44,6 +45,9 @@ dependencies {
     // Testing
     testImplementation("org.jetbrains.kotlin:kotlin-test")
     testImplementation("io.strikt:strikt-core:0.35.1")
+
+    testImplementation("io.ktor:ktor-client-core:$ktorVersion") // client code used in ITests
+    testImplementation("io.ktor:ktor-client-cio:$ktorVersion")
 }
 
 tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinJvmCompile>().configureEach {

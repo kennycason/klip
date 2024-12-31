@@ -1,5 +1,6 @@
 package klip
 
+
 object Files {
     fun getFileExtension(filename: String, default: String = ""): String {
         val name = filename.substringAfterLast('/') // get last segment after path separator

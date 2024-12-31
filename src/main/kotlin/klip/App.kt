@@ -8,6 +8,7 @@ import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.application.*
 import io.ktor.server.cio.*
 import io.ktor.server.engine.*
+import io.ktor.server.plugins.BadRequestException
 import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.server.plugins.statuspages.StatusPages
 import io.ktor.server.response.*
@@ -30,10 +31,12 @@ data class Env(
     val http: Http = Http(),
     val aws: Aws = Aws(),
     val cache: Cache = Cache(),
-    val rulesValidationMode: ValidationMode = readValidationMode(),
+    val gm: GraphicsMagick = GraphicsMagick(),
     val rules: List<KlipTransformRule> = loadRules()
 ) {
-    data class Http(val port: Int = System.getenv("KLIP_HTTP_PORT")?.toInt() ?: 8080)
+    data class Http(
+        val port: Int = System.getenv("KLIP_HTTP_PORT")?.toInt() ?: 8080
+    )
 
     data class Aws(
         val region: String = System.getenv("KLIP_AWS_REGION"),
@@ -46,6 +49,14 @@ data class Env(
         val cacheBucket: String = System.getenv("KLIP_CACHE_BUCKET").ifBlank { System.getenv("KLIP_S3_BUCKET") },
         // prefix for cached files
         val cachePrefix: String = System.getenv("KLIP_CACHE_FOLDER").ifBlank { "_cache/" }
+    )
+
+    data class GraphicsMagick(
+        val timeoutSeconds: Long = System.getenv("KLIP_GM_TIMEOUT_SECONDS")?.toLongOrNull() ?: 30L,
+        val memoryLimit: String = System.getenv("KLIP_GM_MEMORY_LIMIT") ?: "256MB",
+        val mapLimit: String = System.getenv("KLIP_GM_MAP_LIMIT") ?: "512MB",
+        val diskLimit: String = System.getenv("KLIP_GM_DISK_LIMIT") ?: "1GB",
+        val poolSize: Int = System.getenv("KLIP_GM_POOL_SIZE")?.toIntOrNull() ?: Runtime.getRuntime().availableProcessors()
     )
 
     companion object {
@@ -61,22 +72,18 @@ data class Env(
             return KlipTransformRules.parseRules(rulesConfig)
         }
 
-        private fun readValidationMode(): ValidationMode {
-            return System.getenv("KLIP_RULES_VALIDATION_MODE")
-                ?.takeIf { it.isNotBlank() }
-                ?.let { ValidationMode.valueOf(it) }
-                ?: ValidationMode.STRICT
-        }
     }
 }
 
 fun main() {
     logger.info { "Starting Klip" }
-
     val env = Env()
+    logger.info(env)
+
     Configurator.setRootLevel(Level.getLevel(env.logLevel.uppercase()))
 
-    logger.info(env)
+    GraphicsMagickPool.initialize(env.gm)
+    GraphicsMagickImageProcessor.initialize(env.gm)
 
     embeddedServer(CIO, port = env.http.port) {
         configureService(this)
@@ -92,6 +99,12 @@ fun configureService(app: Application) {
         })
     }
     app.install(StatusPages) {
+        exception<BadRequestException> { call, cause ->
+            call.respond(
+                HttpStatusCode.UnprocessableEntity,
+                mapOf("error" to (cause.message ?: "Invalid input"))
+            )
+        }
         exception<IllegalArgumentException> { call, cause ->
             call.respond(
                 HttpStatusCode.UnprocessableEntity,
@@ -119,12 +132,12 @@ object Routes {
         }
 
         routing {
-            get("/img/{size}/{path...}") {
+            get("/img/{path...}") {
                 call.handleImageRequest(s3Client, env)
             }
 
-            get("/img/{path...}") {
-                call.handleRawImageRequest(s3Client, env)
+            get("/placeholder/{dimensions}") {
+                call.handlePlaceholderRequest(env)
             }
 
             get("/health") {
@@ -140,7 +153,8 @@ object Routes {
                     KlipStatus(
                         totalRequests = Counters.getRequests(),
                         cacheHits = Counters.getCacheHits(),
-                        cacheHitRate = Counters.getCacheHitRate()
+                        cacheHitRate = Counters.getCacheHitRate(),
+                        pool = GraphicsMagickPool.getStats()
                     )
                 )
             }
@@ -153,13 +167,15 @@ object Routes {
 
     private suspend fun ApplicationCall.handleImageRequest(s3Client: S3Client, env: Env) {
         Counters.incrementRequests()
-        val transforms = KlipTransforms.from(parameters, ValidationMode.STRICT, env.rules)
 
-        val cacheKey = generateCacheKey(transforms)
-        logger.info("Cache Key: $cacheKey")
+        val transforms = KlipTransforms.from(parameters, env.rules)
+        if (transforms.isEmpty()) {
+            return handleRawImageRequest(s3Client, env)
+        }
 
         // check cache
         if (env.cache.enabled) {
+            val cacheKey = generateCacheKey(transforms)
             val cachedImage = checkCache(s3Client, env, cacheKey)
             if (cachedImage != null) {
                 logger.info("Cache hit: $cacheKey")
@@ -172,13 +188,14 @@ object Routes {
 
         val s3Image = S3.readFile(s3Client, env.aws.s3Bucket, transforms.path)
         if (s3Image == null) {
-            respond(HttpStatusCode.NotFound, "File not found: $transforms.path")
+            respond(HttpStatusCode.NotFound, "File not found: ${transforms.path}")
             return
         }
         try {
             val processedImage = GraphicsMagickImageProcessor.processImage(s3Image, transforms)
 
             if (env.cache.enabled) {
+                val cacheKey = generateCacheKey(transforms)
                 writeToCache(s3Client, env, cacheKey, processedImage)
             }
 
@@ -191,7 +208,6 @@ object Routes {
     }
 
     private suspend fun ApplicationCall.handleRawImageRequest(s3Client: S3Client, env: Env) {
-        Counters.incrementRequests()
         val path = parameters.getAll("path")?.joinToString("/") ?: ""
         val s3Object = S3.readFile(s3Client, env.aws.s3Bucket, path)
         if (s3Object != null) {
@@ -199,6 +215,36 @@ object Routes {
             respondBytes(s3Object.data)
         } else {
             respond(HttpStatusCode.NotFound, "File not found: $path")
+        }
+    }
+
+    private suspend fun ApplicationCall.handlePlaceholderRequest(env: Env) {
+        val dimensions = parameters["dimensions"] ?: throw BadRequestException("Dimensions required")
+        if (!dimensions.matches(Regex("^\\d+x\\d+$"))) {
+            throw BadRequestException("Invalid dimensions format. Expected: {width}x{height}")
+        }
+        val (width, height) = dimensions.split("x").map { it.toInt() }
+
+        val text = parameters["text"]
+        val bgColor = parameters["bgColor"] ?: "gray"
+        val textColor = parameters["textColor"] ?: "white"
+        val textSize = parameters["textSize"]?.toIntOrNull() ?: 20
+
+        try {
+            val image = GraphicsMagickImageProcessor.createPlaceholder(
+                width = width,
+                height = height,
+                text = text,
+                bgColor = bgColor,
+                textColor = textColor,
+                textSize = textSize
+            )
+
+            response.headers.append("Content-Type", ContentType.Image.PNG.toString())
+            respondBytes(image)
+        } catch (e: Exception) {
+            logger.error("Error creating placeholder: ${e.message}", e)
+            respond(HttpStatusCode.InternalServerError, "Error creating placeholder image")
         }
     }
 }
@@ -212,7 +258,8 @@ data class KlipHealth(
 data class KlipStatus(
     val totalRequests: Int,
     val cacheHits: Int,
-    val cacheHitRate: Float
+    val cacheHitRate: Float,
+    val pool: PoolStats,
 )
 
 data class KlipImage(
