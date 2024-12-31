@@ -639,6 +639,7 @@ GET /placeholder/400x300?bgColor=%23FF0000&textColor=white&text=Preview&textSize
 
 # Using hex colors
 GET /placeholder/300x200?bgColor=%23336699&text=Loading
+```
 
 ![Placeholder](https://github.com/kennycason/klip/blob/main/images/placeholder_320x240_hello.png?raw=true)
 
