@@ -158,7 +158,7 @@ class KlipTransformsParsingTest {
             "colors" to listOf("300") // Invalid value
         )
 
-        val exception = assertFailsWith<IllegalArgumentException> {
+        val exception = assertFailsWith<BadRequestException> {
             KlipTransforms.from(params)
                 .validate(listOf(KlipTransformRules.allowedColor(listOf(16, 32, 64, 256))))
         }
@@ -204,7 +204,7 @@ class KlipTransformsParsingTest {
             "dither" to listOf("1") // disallowed
         )
 
-        val exception = assertFailsWith<IllegalArgumentException> {
+        val exception = assertFailsWith<BadRequestException> {
             KlipTransforms.from(params).validate(rules)
         }
 

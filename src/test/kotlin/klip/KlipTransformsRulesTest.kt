@@ -1,3 +1,4 @@
+import io.ktor.server.plugins.BadRequestException
 import klip.*
 import strikt.api.expectThat
 import strikt.assertions.isEqualTo
@@ -13,7 +14,7 @@ class KlipTransformsRulesTest {
         )
 
         // capture the exception to verify the message
-        val exception = assertFailsWith<IllegalArgumentException> {
+        val exception = assertFailsWith<BadRequestException> {
             transforms.validate(
                 rules = listOf(
                     KlipTransformRule(
@@ -54,7 +55,7 @@ class KlipTransformsRulesTest {
             path = "test.png", width = 5, height = 5, quality = 120
         )
 
-        val exception = assertFailsWith<IllegalArgumentException> {
+        val exception = assertFailsWith<BadRequestException> {
             transforms.validate(
                 rules = listOf(
                     KlipTransformRule(
@@ -85,7 +86,7 @@ class KlipTransformsRulesTest {
 
         val allowed = listOf(100 to 100, 200 to 200)
 
-        val exception = assertFailsWith<IllegalArgumentException> {
+        val exception = assertFailsWith<BadRequestException> {
             transforms.validate(
                 rules = listOf(KlipTransformRules.allowedDimensions(allowed))
             )
@@ -115,7 +116,7 @@ class KlipTransformsRulesTest {
 
         val allowed = listOf(50, 75, 100)
 
-        val exception = assertFailsWith<IllegalArgumentException> {
+        val exception = assertFailsWith<BadRequestException> {
             transforms.validate(
                 rules = listOf(KlipTransformRules.allowedQuality(allowed))
             )
@@ -132,7 +133,7 @@ class KlipTransformsRulesTest {
 
         val allowed = listOf(0f, 90f, 180f, 270f)
 
-        val exception = assertFailsWith<IllegalArgumentException> {
+        val exception = assertFailsWith<BadRequestException> {
             transforms.validate(
                 rules = listOf(KlipTransformRules.allowedRotate(allowed))
             )
@@ -149,7 +150,7 @@ class KlipTransformsRulesTest {
 
         val allowed = listOf(1.0f, 2.0f, 3.0f)
 
-        val exception = assertFailsWith<IllegalArgumentException> {
+        val exception = assertFailsWith<BadRequestException> {
             transforms.validate(
                 rules = listOf(KlipTransformRules.allowedBlurRadius(allowed))
             )
@@ -164,7 +165,7 @@ class KlipTransformsRulesTest {
             path = "test.png", width = 100, height = 100, grayscale = true
         )
 
-        val exception = assertFailsWith<IllegalArgumentException> {
+        val exception = assertFailsWith<BadRequestException> {
             transforms.validate(
                 rules = listOf(KlipTransformRules.allowedGrayscale(false))
             )
