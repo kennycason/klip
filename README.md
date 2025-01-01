@@ -1,8 +1,10 @@
 # Klip - Kotlin Language Image Processing
 
-**Klip** is a Kotlin-based image and canvas processing server that dynamically transforms images stored in **AWS S3**. Powered by **GraphicsMagick**, it delivers fast, scalable, and customizable image manipulation through HTTP GET requests.
+**Klip** is a Kotlin-based image and canvas processing server that dynamically transforms images stored in **AWS S3**. Powered by **GraphicsMagick**,
+it delivers fast, scalable, and customizable image manipulation through HTTP GET requests.
 
 ## Features
+
 - **Image Transformations** – Resize, crop, rotate, grayscale, blur, sharpen, and more.
 - **Canvas Generation** – Create custom canvases with gradients, patterns, text overlays, borders, and rounded corners.
 - **Flexible Rules Engine** – Enforce size, quality, and filter constraints with configurable rules for enhanced security and optimization.
@@ -12,9 +14,9 @@
 - **Highly Configurable** – Customize behavior using environment variables for features, limits, and resource constraints.
 
 ## Endpoints
+
 - **`/klip`** – Transform existing images stored in AWS S3.
 - **`/canvas`** – Generate custom graphics and placeholders with flexible styling options.
-
 
 ## Get Image
 
@@ -513,12 +515,12 @@ Query Parameters:
 
 Examples:
 
-| Endpoint                                                                                                     | Description                                                                                                        |
-|--------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------|
-| ![Canvas](https://github.com/kennycason/klip/blob/main/images/canvas_320x240_hello.png?raw=true)             | `/canvas/300x200?text=Hello&bgColor=%23336699&textColor=white`                                                     |
-| ![Canvas](https://github.com/kennycason/klip/blob/main/images/canvas_320x320_bordered_grid.png?raw=true)     | `/canvas/320x320?text=Hello&textSize=40&pattern=check&patternSize=32&borderColor=black0&border=10&textColor=white` |
-| ![Canvas](https://github.com/kennycason/klip/blob/main/images/canvas_320x320_bordered_gradient.png?raw=true) | `/canvas/320x320?text=Hello&textSize=40&borderColor=black&border=10&textColor=white&gradient=blue%2Cred`           |
-| ![Canvas](https://github.com/kennycason/klip/blob/main/images/canvas_320x320_grid.png?raw=true)              | `/canvas/320x320?text=Hello&textSize=40&borderColor=black&border=10&textColor=white&gradient=blue%2Cred`           |
+| Endpoint                                                                                                     | Description                                                                                                       |
+|--------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------|
+| ![Canvas](https://github.com/kennycason/klip/blob/main/images/canvas_320x240_hello.png?raw=true)             | `/canvas/300x200?text=Hello&bgColor=%23336699&textColor=white`                                                    |
+| ![Canvas](https://github.com/kennycason/klip/blob/main/images/canvas_320x320_bordered_grid.png?raw=true)     | `/canvas/320x320?text=Hello&textSize=40&textColor=white&pattern=check&patternSize=32&border=10&borderColor=black` |
+| ![Canvas](https://github.com/kennycason/klip/blob/main/images/canvas_320x320_bordered_gradient.png?raw=true) | `/canvas/320x320?text=Hello&textSize=40&borderColor=black&border=10&textColor=white&gradient=blue%2Cred`          |
+| ![Canvas](https://github.com/kennycason/klip/blob/main/images/canvas_320x320_grid.png?raw=true)              | `/canvas/320x320?pattern=grid&patternSize=50&text=Grid`                                                           |
 
 More Examples:
 
