@@ -518,6 +518,7 @@ Examples:
 | ![Canvas](https://github.com/kennycason/klip/blob/main/images/canvas_320x240_hello.png?raw=true)             | `/canvas/300x200?text=Hello&bgColor=%23336699&textColor=white`                                                     |
 | ![Canvas](https://github.com/kennycason/klip/blob/main/images/canvas_320x320_bordered_grid.png?raw=true)     | `/canvas/320x320?text=Hello&textSize=40&pattern=check&patternSize=32&borderColor=black0&border=10&textColor=white` |
 | ![Canvas](https://github.com/kennycason/klip/blob/main/images/canvas_320x320_bordered_gradient.png?raw=true) | `/canvas/320x320?text=Hello&textSize=40&borderColor=black&border=10&textColor=white&gradient=blue%2Cred`           |
+| ![Canvas](https://github.com/kennycason/klip/blob/main/images/canvas_320x320_grid.png?raw=true)              | `/canvas/320x320?text=Hello&textSize=40&borderColor=black&border=10&textColor=white&gradient=blue%2Cred`           |
 
 More Examples:
 
