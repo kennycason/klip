@@ -26,6 +26,26 @@ variable "klip_port" {
   default = "8080"
 }
 
+variable "klip_enabled" {
+  type    = string
+  default = "true"
+}
+
+variable "klip_canvas_enabled" {
+  type    = string
+  default = "true"
+}
+
+variable "klip_admin_enabled" {
+  type    = string
+  default = "false"
+}
+
+variable "klip_admin_api_key" {
+  type    = string
+  default = ""
+}
+
 variable "klip_s3_bucket" {
   type = string
 }
@@ -52,6 +72,15 @@ variable "klip_rules_file" {
   type = string
 }
 
+variable "klip_canvas_rules" {
+  type    = string
+  default = ""
+}
+
+variable "klip_canvas_rules_file" {
+  type    = string
+  default = ""
+}
 
 variable "klip_gm_timeout_seconds" {
   type = string

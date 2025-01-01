@@ -159,10 +159,8 @@ class KlipTransformsParsingTest {
         )
 
         val exception = assertFailsWith<IllegalArgumentException> {
-            KlipTransforms.from(
-                params,
-                rules = listOf(KlipTransformRules.allowedColor(listOf(16, 32, 64, 256)))
-            )
+            KlipTransforms.from(params)
+                .validate(listOf(KlipTransformRules.allowedColor(listOf(16, 32, 64, 256))))
         }
 
         expectThat(exception).get { message }
@@ -207,10 +205,7 @@ class KlipTransformsParsingTest {
         )
 
         val exception = assertFailsWith<IllegalArgumentException> {
-            KlipTransforms.from(
-                parameters = params,
-                rules = rules
-            )
+            KlipTransforms.from(params).validate(rules)
         }
 
         expectThat(exception.message?.contains("Horizontal flip is not allowed.")).isTrue()

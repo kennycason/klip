@@ -1,14 +1,25 @@
-# Klip - Kotlin Image Processing Server
+# Klip - Kotlin Language Image Processing
 
-Klip is a lightweight Kotlin-based image processing server designed to handle dynamic transformations on images stored in AWS S3.
-It supports caching, resizing, cropping, grayscale filters, and rotation via HTTP GET requests.
+**Klip** is a Kotlin-based image and canvas processing server that dynamically transforms images stored in **AWS S3**. Powered by **GraphicsMagick**, it delivers fast, scalable, and customizable image manipulation through HTTP GET requests.
 
----
+## Features
+- **Image Transformations** – Resize, crop, rotate, grayscale, blur, sharpen, and more.
+- **Canvas Generation** – Create custom canvases with gradients, patterns, text overlays, borders, and rounded corners.
+- **Flexible Rules Engine** – Enforce size, quality, and filter constraints with configurable rules for enhanced security and optimization.
+- **Caching Support** – Seamlessly caches transformed images to reduce processing overhead and improve performance.
+- **AWS S3 Integration** – Pulls source images directly from S3 and supports caching to a separate bucket.
+- **Admin APIs** – Monitor performance and track cache statistics with secure, API-key-protected admin endpoints.
+- **Highly Configurable** – Customize behavior using environment variables for features, limits, and resource constraints.
+
+## Endpoints
+- **`/klip`** – Transform existing images stored in AWS S3.
+- **`/canvas`** – Generate custom graphics and placeholders with flexible styling options.
+
 
 ## Get Image
 
 ```
-GET /img/{path/to/image}
+GET /klip/{path/to/image}
 ```
 
 Fetch the original image stored in the S3 bucket without any transformations.
@@ -16,7 +27,7 @@ Fetch the original image stored in the S3 bucket without any transformations.
 Example:
 
 ```bash
-GET http://localhost:8080/img/properties/1/04c08449e126.png
+GET http://localhost:8080/klip/properties/1/04c08449e126.png
 ```
 
 <img src="https://github.com/kennycason/klip/blob/main/images/original.png?raw=true" width="500px"/>
@@ -26,14 +37,14 @@ GET http://localhost:8080/img/properties/1/04c08449e126.png
 ## Resize Image
 
 ```
-GET /img/{path/to/image}?w={width}&h={height}
+GET /klip/{path/to/image}?w={width}&h={height}
 
 # Set width and height independently.
-GET /img/{path/to/image}?w={width}
-GET /img/{path/to/image}?h={height}
+GET /klip/{path/to/image}?w={width}
+GET /klip/{path/to/image}?h={height}
 
 # Dimension syntax
-GET /img/{path/to/image}?d={width}x{height}
+GET /klip/{path/to/image}?d={width}x{height}
 ```
 
 Resize the image to the specified width and height.
@@ -48,8 +59,8 @@ Query Parameters:
 Example:
 
 ```bash
-GET http://localhost:8080/img/properties/1/04c08449e126.png?d=640x480
-GET http://localhost:8080/img/properties/1/04c08449e126.png?w=640&h480
+GET http://localhost:8080/klip/properties/1/04c08449e126.png?d=640x480
+GET http://localhost:8080/klip/properties/1/04c08449e126.png?w=640&h480
 ```
 
 ![Resized Image](https://github.com/kennycason/klip/blob/main/images/resized.png?raw=true)
@@ -59,7 +70,7 @@ GET http://localhost:8080/img/properties/1/04c08449e126.png?w=640&h480
 Control how the image fits within the specified dimensions.
 
 ```bash
-GET /img/{path/to/image}?w={width}&h={height}&fit={mode}
+GET /klip/{path/to/image}?w={width}&h={height}&fit={mode}
 ```
 
 | Parameter | Type   | Required | Default | Description                                                                    |
@@ -71,19 +82,19 @@ Fit Modes Explained:
 contain: Preserves aspect ratio while ensuring image fits within specified dimensions
 
 ```bash
-GET /img/photo.jpg?w=800&h=600&fit=contain
+GET /klip/photo.jpg?w=800&h=600&fit=contain
 ```
 
 cover: Fills entire dimensions while preserving aspect ratio, cropping excess
 
 ```bash
-GET /img/photo.jpg?w=800&h=600&fit=cover
+GET /klip/photo.jpg?w=800&h=600&fit=cover
 ```
 
 fill: Stretches or squishes image to exactly fit dimensions
 
 ```bash
-GET /img/photo.jpg?w=800&h=600&fit=fill
+GET /klip/photo.jpg?w=800&h=600&fit=fill
 ```
 
 Default Behavior:
@@ -96,7 +107,7 @@ Default Behavior:
 ## Quality Adjustment
 
 ```
-GET /img/{path/to/image}?quality=75
+GET /klip/{path/to/image}?quality=75
 ```
 
 Adjust the image quality for compression and size optimization.
@@ -114,17 +125,17 @@ Examples:
 
 ```bash
 # High Quality (Default)
-GET http://localhost:8080/img/properties/1/04c08449e126.png?quality=100
+GET http://localhost:8080/klip/properties/1/04c08449e126.png?quality=100
 # Medium-High Quality
-GET http://localhost:8080/img/properties/102/05013ad4469e00a7aed9596bc37af74e.jpg?quality=75
+GET http://localhost:8080/klip/properties/102/05013ad4469e00a7aed9596bc37af74e.jpg?quality=75
 # Medium Quality
-GET http://localhost:8080/img/properties/102/05013ad4469e00a7aed9596bc37af74e.jpg?quality=50
+GET http://localhost:8080/klip/properties/102/05013ad4469e00a7aed9596bc37af74e.jpg?quality=50
 # Low Quality
-GET http://localhost:8080/img/properties/102/05013ad4469e00a7aed9596bc37af74e.jpg?quality=25
+GET http://localhost:8080/klip/properties/102/05013ad4469e00a7aed9596bc37af74e.jpg?quality=25
 # Lower Quality
-GET http://localhost:8080/img/properties/102/05013ad4469e00a7aed9596bc37af74e.jpg?quality=10
+GET http://localhost:8080/klip/properties/102/05013ad4469e00a7aed9596bc37af74e.jpg?quality=10
 # Combined with resizing
-GET http://localhost:8080/img/properties/102/05013ad4469e00a7aed9596bc37af74e.jpg?quality=10&w1301h781
+GET http://localhost:8080/klip/properties/102/05013ad4469e00a7aed9596bc37af74e.jpg?quality=10&w1301h781
 ```
 
 ### Image Comparison (click to enlarge)
@@ -144,7 +155,7 @@ GET http://localhost:8080/img/properties/102/05013ad4469e00a7aed9596bc37af74e.jp
 ## Center Crop
 
 ```
-GET /img/{path/to/image}?crop?w={width}&h={height}
+GET /klip/{path/to/image}?crop?w={width}&h={height}
 ```
 
 Crop the image from the center to the specified width and height.
@@ -158,7 +169,7 @@ Query Parameters:
 Example:
 
 ```bash
-GET http://localhost:8080/img/properties/1/04c08449e126.png?crop&w=250&h=250
+GET http://localhost:8080/klip/properties/1/04c08449e126.png?crop&w=250&h=250
 ```
 
 ![Cropped Image](https://github.com/kennycason/klip/blob/main/images/cropped.png?raw=true)
@@ -168,7 +179,7 @@ GET http://localhost:8080/img/properties/1/04c08449e126.png?crop&w=250&h=250
 ## Grayscale Filter
 
 ```
-GET /img/{path/to/image}?grayscale
+GET /klip/{path/to/image}?grayscale
 ```
 
 Convert the image to grayscale while resizing to the specified dimensions.
@@ -182,7 +193,7 @@ Query Parameters:
 Example:
 
 ```bash
-GET http://localhost:8080/img/250x250/properties/1/04c08449e126.png?grayscale
+GET http://localhost:8080/klip/250x250/properties/1/04c08449e126.png?grayscale
 ```
 
 ![Grayscale Image](https://github.com/kennycason/klip/blob/main/images/resized_grayscale.png?raw=true)
@@ -192,7 +203,7 @@ GET http://localhost:8080/img/250x250/properties/1/04c08449e126.png?grayscale
 ## Flip Horizontally
 
 ```
-GET /img/{path/to/image}?flipH
+GET /klip/{path/to/image}?flipH
 ```
 
 Flip the image horizontally (left-to-right).
@@ -206,7 +217,7 @@ Query Parameters:
 Example:
 
 ```bash
-GET http://localhost:8080/img/properties/1/04c08449e126.png?flipH
+GET http://localhost:8080/klip/properties/1/04c08449e126.png?flipH
 ```
 
 ![Flipped Horizontally](https://github.com/kennycason/klip/blob/main/images/resized_fliph.png?raw=true)
@@ -216,7 +227,7 @@ GET http://localhost:8080/img/properties/1/04c08449e126.png?flipH
 ## Flip Vertically
 
 ```
-GET /img/{path/to/image}?flipV
+GET /klip/{path/to/image}?flipV
 ```
 
 Flip the image vertically (top-to-bottom).
@@ -230,7 +241,7 @@ Query Parameters:
 Example - Flip vertically:
 
 ```bash
-GET http://localhost:8080/img/properties/1/04c08449e126.png?flipV
+GET http://localhost:8080/klip/properties/1/04c08449e126.png?flipV
 ```
 
 ![Flipped Vertically](https://github.com/kennycason/klip/blob/main/images/resized_flipv.png?raw=true)
@@ -238,7 +249,7 @@ GET http://localhost:8080/img/properties/1/04c08449e126.png?flipV
 Example - Flip both horizontally and vertically:
 
 ```bash
-GET http://localhost:8080/img/properties/1/04c08449e126.png?flipH&flipV
+GET http://localhost:8080/klip/properties/1/04c08449e126.png?flipH&flipV
 ```
 
 ![Flipped Both](https://github.com/kennycason/klip/blob/main/images/resized_fliph_flipv.png?raw=true)
@@ -248,7 +259,7 @@ GET http://localhost:8080/img/properties/1/04c08449e126.png?flipH&flipV
 ## Rotate Image
 
 ```
-GET /img/{path/to/image}?rotate=45
+GET /klip/{path/to/image}?rotate=45
 ```
 
 Rotate the image by the specified degrees (clockwise).
@@ -262,7 +273,7 @@ Query Parameters:
 Example - Rotate image 45 degrees:
 
 ```bash
-GET http://localhost:8080/img/properties/1/04c08449e126.png?rotate=45
+GET http://localhost:8080/klip/properties/1/04c08449e126.png?rotate=45
 ```
 
 ![Rotated Image](https://github.com/kennycason/klip/blob/main/images/resized_rotated45.png?raw=true)
@@ -272,8 +283,8 @@ GET http://localhost:8080/img/properties/1/04c08449e126.png?rotate=45
 ## Blur Image
 
 ```
-GET /img/{path/to/image}?blur={radius}x{sigma}
-GET /img/{path/to/image}?blur={blur}
+GET /klip/{path/to/image}?blur={radius}x{sigma}
+GET /klip/{path/to/image}?blur={blur}
 ```
 
 Apply a **Gaussian blur** to the image to soften details.
@@ -302,13 +313,13 @@ Query Parameters:
 Example - Mild blur:
 
 ```bash
-GET http://localhost:8080/img/properties/1/04c08449e126.png?blur=0x2
+GET http://localhost:8080/klip/properties/1/04c08449e126.png?blur=0x2
 ```
 
 Example: Simple, heavy blur
 
 ```bash
-GET http://localhost:8080/img/properties/1/04c08449e126.png?blur=7
+GET http://localhost:8080/klip/properties/1/04c08449e126.png?blur=7
 ```
 
 ![Blurred Image](https://github.com/kennycason/klip/blob/main/images/blur0x2.png?raw=true)
@@ -318,7 +329,7 @@ GET http://localhost:8080/img/properties/1/04c08449e126.png?blur=7
 ## Sharpen Image
 
 ```
-GET /img/{path/to/image}?sharpen=2.0
+GET /klip/{path/to/image}?sharpen=2.0
 ```
 
 Sharpen the image to enhance details and make edges clearer.
@@ -335,7 +346,7 @@ Query Parameters:
 Example - Mild blur:
 
 ```bash
-GET http://localhost:8080/img/properties/1/04c08449e126.png?sharpen=2.0
+GET http://localhost:8080/klip/properties/1/04c08449e126.png?sharpen=2.0
 ```
 
 ![Blurred Image](https://github.com/kennycason/klip/blob/main/images/sharpen2.0.png?raw=true)
@@ -345,7 +356,7 @@ GET http://localhost:8080/img/properties/1/04c08449e126.png?sharpen=2.0
 ## Color Adjustment
 
 ```
-GET /img/{path/to/image}?colors=16
+GET /klip/{path/to/image}?colors=16
 ```
 
 Reduce the number of colors in the image to simplify or stylize it.
@@ -359,7 +370,7 @@ Query Parameters:
 Example - 10 colors:
 
 ```bash
-GET http://localhost:8080/img/properties/1/04c08449e126.png?colors=10
+GET http://localhost:8080/klip/properties/1/04c08449e126.png?colors=10
 ```
 
 ![Blurred Image](https://github.com/kennycason/klip/blob/main/images/colors10.png?raw=true)
@@ -369,7 +380,7 @@ GET http://localhost:8080/img/properties/1/04c08449e126.png?colors=10
 ## Dithering
 
 ```
-GET /img/{path/to/image}?dither
+GET /klip/{path/to/image}?dither
 ```
 
 Enable or disable dithering to improve color approximation when reducing colors.
@@ -383,7 +394,7 @@ Query Parameters:
 Example - 10 colors:
 
 ```bash
-GET http://localhost:8080/img/properties/1/04c08449e126.png?dither
+GET http://localhost:8080/klip/properties/1/04c08449e126.png?dither
 ```
 
 ---
@@ -391,7 +402,7 @@ GET http://localhost:8080/img/properties/1/04c08449e126.png?dither
 ## Combine Filters
 
 ```
-GET /img/{path/to/image}?grayscale&crop&rotate=90
+GET /klip/{path/to/image}?grayscale&crop&rotate=90
 ```
 
 Apply multiple transformations in a single request.
@@ -399,7 +410,7 @@ Apply multiple transformations in a single request.
 Example:
 
 ```bash
-GET http://localhost:8080/img/properties/1/04c08449e126.png?w=250&h=250&grayscale&crop&rotate=90
+GET http://localhost:8080/klip/properties/1/04c08449e126.png?w=250&h=250&grayscale&crop&rotate=90
 ```
 
 ![Combined Filters](https://github.com/kennycason/klip/blob/main/images/combined_transforms.png?raw=true)
@@ -440,25 +451,97 @@ Response:
 
 ---
 
-## Status Check (Admin only: Coming Soon)
+## Admin Status Check
+
+Get detailed status information about Klip
 
 ```
 GET /admin/status
 ```
 
-Get detailed status information about Klip
+with `Authorization: ApiKey <YOUR_API_KEY>`
 
 Response:
 
 ```
 {
-    "totalRequests": 4182,
-    "cacheHits": 3891,
-    "cacheHitRate": 0.93041607
+    "totalRequests": 504,
+    "cacheHits": 252,
+    "cacheHitRate": 0.5,
+    "pool": {
+        "maxConcurrent": 2,
+        "currentAvailable": 2,
+        "totalProcessed": 281,
+        "averageWaitMs": 20049
+    }
 }
 ```
 
 ---
+
+## Canvas - Generated Placeholder Images
+
+```bash
+GET /canvas/{width}x{height}
+```
+
+Generate a placeholder image with custom dimensions, background color, and optional text overlay.
+
+Query Parameters:
+
+| Parameter     | Type   | Required | Default | Description                                    |
+|---------------|--------|----------|---------|------------------------------------------------|
+| `bgColor`     | String | Optional | gray    | Background color (name or hex code)            |
+| `textColor`   | String | Optional | white   | Text color (name or hex code)                  |
+| `textSize`    | Int    | Optional | 20      | Font size for the text                         |
+| `text`        | String | Optional | -       | Text to display on the canvas                  |
+| `pattern`     | String | Optional | -       | Pattern type: "check", "grid", "stripe"        |
+| `patternSize` | Int    | Optional | 20-40   | Size of pattern elements                       |
+| `gradient`    | String | Optional | -       | Gradient spec: "blue,red" or "45,#ff0000,blue" |
+| `font`        | String | Optional | Arial   | Font family for text                           |
+| `textAlign`   | String | Optional | center  | Text alignment: "center", "north", "southwest" |
+| `border`      | Int    | Optional | -       | Border width in pixels                         |
+| `borderColor` | String | Optional | -       | Border color (name or hex code)                |
+| `radius`      | Int    | Optional | 0       | Corner radius for rounded corners              |
+| `grayscale`   | Bool   | Optional | false   | Convert to grayscale                           |
+| `quality`     | Int    | Optional | -       | Output image quality (1-100)                   |
+| `blur`        | String | Optional | -       | Blur effect: "2.5" or "2.5x1.2"                |
+| `sharpen`     | Float  | Optional | -       | Sharpen effect intensity                       |
+| `rotate`      | Float  | Optional | -       | Rotation angle in degrees                      |
+| `flipH`       | Bool   | Optional | false   | Flip horizontally                              |
+| `flipV`       | Bool   | Optional | false   | Flip vertically                                |
+
+Examples:
+
+| Endpoint                                                                                                     | Description                                                                                                        |
+|--------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------|
+| ![Canvas](https://github.com/kennycason/klip/blob/main/images/canvas_320x240_hello.png?raw=true)             | `/canvas/300x200?text=Hello&bgColor=%23336699&textColor=white`                                                     |
+| ![Canvas](https://github.com/kennycason/klip/blob/main/images/canvas_320x320_bordered_grid.png?raw=true)     | `/canvas/320x320?text=Hello&textSize=40&pattern=check&patternSize=32&borderColor=black0&border=10&textColor=white` |
+| ![Canvas](https://github.com/kennycason/klip/blob/main/images/canvas_320x320_bordered_gradient.png?raw=true) | `/canvas/320x320?text=Hello&textSize=40&borderColor=black&border=10&textColor=white&gradient=blue%2Cred`           |
+
+More Examples:
+
+```bash
+# Basic gray placeholder
+GET /canvas/640x480
+
+# Blue placeholder with text
+GET /canvas/200x100?bgColor=blue&text=Hello
+
+# Custom colors and font size
+GET /canvas/400x300?bgColor=%23FF0000&textColor=white&text=Preview&textSize=30
+
+# Using hex colors
+GET /canvas/300x200?bgColor=%23336699&text=Loading
+
+# More
+GET /canvas/300x200?bg=blue&text=Hello
+GET /canvas/300x200?gradient=45,blue,red&text=Gradient
+GET /canvas/300x200?pattern=check&patternSize=30
+GET /canvas/300x200?pattern=grid&patternSize=50&text=Grid
+GET /canvas/300x200?bg=white&border=5&borderColor=black&radius=10
+GET /canvas/300x200?text=Hello&font=Helvetica&align=north&grayscale=1
+```
 
 ## Klip Rules Configuration
 
@@ -469,12 +552,13 @@ constraints on transformations, ensuring only allowed operations are applied.
 
 ### Environment Variable Configuration
 
-Set rules using the `KLIP_RULES` environment variable as a **semicolon-separated string**:
+Set rules using the `KLIP_RULES` and `KLIP_CANVAS_RULES` environment variable as a **semicolon-separated string**:
 
 Example:
 
 ```bash
 KLIP_RULES="+flipV;-flipH;dim 32x32 64x64 128x128;blur 1 2 3 4;quality 75 85 90;rotate 0 90 180"
+KLIP_CANVAS_RULES="+flipV;-flipH;dim 32x32 64x64 128x128;rotate 0 90 180"
 ```
 
 ---
@@ -487,6 +571,7 @@ Example:
 
 ```bash
 KLIP_RULES_FILE=/app/config/rules.txt
+KLIP_CANVAS_RULES_FILE=/app/config/canvas_rules.txt
 ```
 
 ### rules.txt
@@ -542,7 +627,8 @@ docker run -e KLIP_RULES_FILE=/config/rules.txt -v /local/config:/config klip-ap
 
 To test rules without deployment:
 
-1. Create a **rules.txt** file:
+Create a **rules.txt** file:
+
    ```
    +flipV
    -flipH
@@ -566,73 +652,11 @@ KLIP_RULES="+flipV;-flipH;dim 32x32 64x64 128x128" ./gradlew run
 
 ---
 
-## Generate Placeholder Image
-
-```bash
-GET /canvas/{width}x{height}
-```
-
-Generate a placeholder image with custom dimensions, background color, and optional text overlay.
-
-Query Parameters:
-
-| Parameter     | Type   | Required | Default | Description                                    |
-|---------------|--------|----------|---------|------------------------------------------------|
-| `bgColor`     | String | Optional | gray    | Background color (name or hex code)            |
-| `textColor`   | String | Optional | white   | Text color (name or hex code)                  |
-| `textSize`    | Int    | Optional | 20      | Font size for the text                         |
-| `text`        | String | Optional | -       | Text to display on the canvas                  |
-| `pattern`     | String | Optional | -       | Pattern type: "check", "grid", "stripe"        |
-| `patternSize` | Int    | Optional | 20-40   | Size of pattern elements                       |
-| `gradient`    | String | Optional | -       | Gradient spec: "blue,red" or "45,#ff0000,blue" |
-| `font`        | String | Optional | Arial   | Font family for text                           |
-| `textAlign`   | String | Optional | center  | Text alignment: "center", "north", "southwest" |
-| `border`      | Int    | Optional | -       | Border width in pixels                         |
-| `borderColor` | String | Optional | -       | Border color (name or hex code)                |
-| `radius`      | Int    | Optional | 0       | Corner radius for rounded corners              |
-| `grayscale`   | Bool   | Optional | false   | Convert to grayscale                           |
-| `quality`     | Int    | Optional | -       | Output image quality (1-100)                   |
-| `blur`        | String | Optional | -       | Blur effect: "2.5" or "2.5x1.2"                |
-| `sharpen`     | Float  | Optional | -       | Sharpen effect intensity                       |
-| `rotate`      | Float  | Optional | -       | Rotation angle in degrees                      |
-| `flipH`       | Bool   | Optional | false   | Flip horizontally                              |
-| `flipV`       | Bool   | Optional | false   | Flip vertically                                |
-
-
-| Endpoint                                                                                                           | Description                                                                                                  |
-|--------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------|
-| `/canvas/300x200?text=Hello&bgColor=%23336699&textColor=white`                                                     | ![Canvas](https://github.com/kennycason/klip/blob/main/images/canvas_320x240_hello.png?raw=true)             |
-| `/canvas/320x320?text=Hello&textSize=40&pattern=check&patternSize=32&borderColor=black0&border=10&textColor=white` | ![Canvas](https://github.com/kennycason/klip/blob/main/images/canvas_320x320_bordered_grid.png?raw=true)     |
-| `/canvas/320x320?text=Hello&textSize=40&borderColor=black&border=10&textColor=white&gradient=blue%2Cred`           | ![Canvas](https://github.com/kennycason/klip/blob/main/images/canvas_320x320_bordered_gradient.png?raw=true) |
-
-More Examples:
-
-```bash
-# Basic gray placeholder
-GET /canvas/640x480
-
-# Blue placeholder with text
-GET /canvas/200x100?bgColor=blue&text=Hello
-
-# Custom colors and font size
-GET /canvas/400x300?bgColor=%23FF0000&textColor=white&text=Preview&textSize=30
-
-# Using hex colors
-GET /canvas/300x200?bgColor=%23336699&text=Loading
-
-# More
-GET /canvas/300x200?bg=blue&text=Hello
-GET /canvas/300x200?gradient=45,blue,red&text=Gradient
-GET /canvas/300x200?pattern=check&patternSize=30
-GET /canvas/300x200?pattern=grid&patternSize=50&text=Grid
-GET /canvas/300x200?bg=white&border=5&borderColor=black&radius=10
-GET /canvas/300x200?text=Hello&font=Helvetica&align=north&grayscale=1
-```
 ## Errors
 
 ```bash
-GET /img/properties/1/04c08449e1261fedc2eb1a6a99245531.png?w=10&h=9
-GET /img/properties/1/04c08449e1261fedc2eb1a6a99245531.png?d=10x9
+GET /klip/properties/1/04c08449e1261fedc2eb1a6a99245531.png?w=10&h=9
+GET /klip/properties/1/04c08449e1261fedc2eb1a6a99245531.png?d=10x9
 ```
 
 422 - Unprocessable Entity
@@ -657,7 +681,6 @@ brew install graphicsmagick
 
 ---
 
-
 ## Build Project
 
 ```shell
@@ -668,6 +691,10 @@ brew install graphicsmagick
 
 | Section            | Variable                  | Type    | Default                    | Required | Description                                                                   |
 |--------------------|---------------------------|---------|----------------------------|----------|-------------------------------------------------------------------------------|
+| **Features**       | `KLIP_ENABLED`            | Boolean | `true`                     | No       | Enable/disable the /klip/ endpoint for image transformations.                 |
+| **Features**       | `KLIP_CANVAS_ENABLED`     | Boolean | `true`                     | No       | Enable/disable the /canvas/ endpoint for image generation.                    |
+| **Features**       | `KLIP_ADMIN_ENABLED`      | Boolean | `false`                    | No       | Enable/disable the admin endpoints.                                           |
+| **Security**       | `KLIP_ADMIN_API_KEY`      | String  | -                          | Yes*     | API key required for admin endpoints when admin is enabled.                   |
 | **LOG**            | `KLIP_LOG_LEVEL`          | Enum    | `INFO`                     | No       | `TRACE`, `INFO`, `DEBUG`, `WARN`, `ERROR`                                     |
 | **HTTP**           | `KLIP_HTTP_PORT`          | Int     | `8080`                     | No       | The HTTP port the server listens on.                                          |
 | **AWS**            | `KLIP_AWS_REGION`         | String  | -                          | Yes      | AWS region for S3 bucket (e.g., `us-west-2`).                                 |
@@ -688,6 +715,10 @@ brew install graphicsmagick
 ## Run Klip Server
 
 ```bash
+KLIP_ENABLED=true \
+KLIP_CANVAS_ENABLED=true \
+KLIP_ADMIN_ENABLED=true \
+KLIP_ADMIN_API_KEY="your.secret.key" \
 KLIP_LOG_LEVEL=INFO \
 KLIP_HTTP_PORT=8080 \
 KLIP_AWS_REGION=us-west-2 \
@@ -707,7 +738,6 @@ java -jar build/libs/klip-all.jar
 Default local endpoint: `http://0.0.0.0:8080`
 
 ---
-
 
 # Docker
 

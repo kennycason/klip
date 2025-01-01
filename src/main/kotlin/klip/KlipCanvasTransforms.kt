@@ -10,7 +10,7 @@ data class KlipCanvasTransforms(
     val bgColor: String = "gray",     // Background color or gradient
     val text: String? = null,         // Text to display
     val textColor: String = "white",  // Text color
-    val textSize: Int = 20,          // Font size
+    val textSize: Int = 20,           // Font size
 
     // New canvas-specific properties
     val pattern: String? = null,      // e.g., "grid", "check", "stripe"
@@ -33,6 +33,44 @@ data class KlipCanvasTransforms(
     var blurRadius: Float? = null,
     var blurSigma: Float? = null
 ) {
+
+    fun validate(rules: List<KlipTransformRule>): KlipCanvasTransforms {
+        val errors = mutableListOf<String>()
+
+        if (width <= 0 || height <= 0) errors.add("Width and height must be > 0")
+        if (textSize <= 0) errors.add("Text size must be > 0")
+
+        rules.forEach { rule ->
+            val transforms = toTransforms()
+            if (!rule.isValid(transforms)) {
+                errors.add(rule.errorMessage(transforms))
+            }
+        }
+
+        if (errors.isNotEmpty()) {
+            throw BadRequestException(errors.joinToString(", "))
+        }
+        return this
+    }
+
+    fun toTransforms(): KlipTransforms {
+        return KlipTransforms(
+            path = "", // not applicable, empty for validation
+            width = width,
+            height = height,
+            fit = null, // shouldn't be needed, rules will enforce otherwise
+            grayscale = grayscale,
+            flipH = flipH,
+            flipV = flipV,
+            rotate = rotate,
+            quality = quality,
+            sharpen = sharpen,
+            colors = colors,
+            blurRadius = blurRadius,
+            blurSigma = blurSigma
+        )
+    }
+
     companion object {
         fun from(parameters: Parameters): KlipCanvasTransforms {
             // Parse dimensions from path parameter

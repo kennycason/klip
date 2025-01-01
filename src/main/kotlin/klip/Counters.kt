@@ -6,6 +6,7 @@ import kotlin.math.roundToInt
 object Counters {
     private val requests = AtomicInteger(0)
     private val cacheHits = AtomicInteger(0)
+    private val canvasRequests = AtomicInteger(0)
 
     fun incrementRequests() {
         requests.incrementAndGet()
@@ -15,8 +16,13 @@ object Counters {
         cacheHits.incrementAndGet()
     }
 
+    fun incrementCanvasRequests() {
+        canvasRequests.incrementAndGet()
+    }
+
     fun getRequests(): Int = requests.get()
     fun getCacheHits(): Int = cacheHits.get()
+    fun getCanvasRequests(): Int = canvasRequests.get()
 
     fun getCacheHitRate(): Float {
         val requests = requests.get()
@@ -27,5 +33,6 @@ object Counters {
     fun reset() {
         requests.set(0)
         cacheHits.set(0)
+        canvasRequests.set(0)
     }
 }

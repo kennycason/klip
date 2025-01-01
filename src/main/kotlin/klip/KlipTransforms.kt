@@ -58,7 +58,7 @@ data class KlipTransforms(
         }
 
         if (errors.isNotEmpty()) {
-            throw IllegalArgumentException(errors.joinToString(", "))
+            throw BadRequestException(errors.joinToString(", "))
         }
         return this
     }
@@ -68,8 +68,7 @@ data class KlipTransforms(
          * Create KlipTransforms from parameters with optional rules.
          */
         fun from(
-            parameters: Parameters,
-            rules: List<KlipTransformRule> = emptyList()
+            parameters: Parameters
         ): KlipTransforms {
             val path = parameters.getAll("path")?.joinToString("/") ?: ""
 
@@ -122,7 +121,7 @@ data class KlipTransforms(
                 colors = colors,
                 blurRadius = blurRadius,
                 blurSigma = blurSigma
-            ).validate(rules)
+            )
         }
 
         fun parseDimensions(parameters: Parameters): Pair<Int?, Int?> {

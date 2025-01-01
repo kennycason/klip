@@ -1,6 +1,13 @@
 FROM amazoncorretto:21
 
 # Set environment variables (can be overridden at runtime)
+
+# Features
+ENV KLIP_ENABLED=true
+ENV KLIP_CANVAS_ENABLED=true
+ENV KLIP_ADMIN_ENABLED=false
+ENV KLIP_ADMIN_API_KEY=""
+
 ENV KLIP_LOG_LEVEL=INFO
 ENV KLIP_HTTP_PORT=8080
 ENV KLIP_AWS_REGION=us-west-2
@@ -10,6 +17,16 @@ ENV KLIP_CACHE_BUCKET=cdn.klip.com
 ENV KLIP_CACHE_FOLDER=_cache/
 ENV KLIP_RULES=""
 ENV KLIP_RULES_FILE=""
+ENV KLIP_CANVAS_RULES=""
+ENV KLIP_CANVAS_RULES_FILE=""
+
+# GraphicsMagick config
+ENV KLIP_GM_TIMEOUT_SECONDS=30
+ENV KLIP_GM_MEMORY_LIMIT=128MB
+ENV KLIP_GM_MAP_LIMIT=256MB
+ENV KLIP_GM_DISK_LIMIT=512GB
+# defaults to available processors if not set
+ENV KLIP_GM_POOL_SIZE=""
 
 # Create app directory and set working directory
 WORKDIR /app

@@ -112,12 +112,12 @@ object GraphicsMagickImageProcessor {
             val completed =  process.waitFor(config.timeoutSeconds, TimeUnit.SECONDS)
             if (!completed) {
                 process.destroyForcibly()
-                throw RuntimeException("GraphicsMagick operation timed out after ${config.timeoutSeconds} seconds")
+                throw GraphicsMagickException("GraphicsMagick operation timed out after ${config.timeoutSeconds} seconds")
             }
 
             if (process.exitValue() != 0) {
                 logger.error("GraphicsMagick failed: $errorOutput")
-                throw RuntimeException("GraphicsMagick failed: $errorOutput")
+                throw GraphicsMagickException("GraphicsMagick failed: $errorOutput")
             }
 
             return outputFile.readBytes()
@@ -343,11 +343,11 @@ object GraphicsMagickImageProcessor {
             val completed = process.waitFor(config.timeoutSeconds, TimeUnit.SECONDS)
             if (!completed) {
                 process.destroyForcibly()
-                throw RuntimeException("GraphicsMagick operation timed out after ${config.timeoutSeconds} seconds")
+                throw GraphicsMagickException("GraphicsMagick operation timed out after ${config.timeoutSeconds} seconds")
             }
 
             if (process.exitValue() != 0) {
-                throw RuntimeException("GraphicsMagick failed: $errorOutput")
+                throw GraphicsMagickException("GraphicsMagick failed: $errorOutput")
             }
 
             // If rounded corners are needed, apply them as a separate operation
@@ -374,7 +374,7 @@ object GraphicsMagickImageProcessor {
 
                     if (!maskProcess.waitFor(config.timeoutSeconds, TimeUnit.SECONDS) ||
                         maskProcess.exitValue() != 0) {
-                        throw RuntimeException("Failed to create corner mask: $errorOutput")
+                        throw GraphicsMagickException("Failed to create corner mask: $errorOutput")
                     }
 
                     // Compose the original image with the mask
@@ -395,7 +395,7 @@ object GraphicsMagickImageProcessor {
 
                     if (!composeProcess.waitFor(config.timeoutSeconds, TimeUnit.SECONDS) ||
                         composeProcess.exitValue() != 0) {
-                        throw RuntimeException("Failed to apply corner mask: $errorOutput")
+                        throw GraphicsMagickException("Failed to apply corner mask: $errorOutput")
                     }
 
                 } finally {
@@ -410,3 +410,5 @@ object GraphicsMagickImageProcessor {
     }
 
 }
+
+class GraphicsMagickException(message: String, cause: Throwable? = null) : RuntimeException(message, cause)

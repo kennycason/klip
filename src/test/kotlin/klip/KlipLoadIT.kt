@@ -14,11 +14,11 @@ import kotlin.math.min
 import kotlin.system.measureTimeMillis
 
 /**
- * https://klip.arrived.com/img/properties/702/c0259e4ef8757ace42558e9aa6fcdf15.jpg?quality=90&w=956&h=468&fit=contain
+ * https://klip.arrived.com/klip/properties/702/c0259e4ef8757ace42558e9aa6fcdf15.jpg?quality=90&w=956&h=468&fit=contain
  */
 fun main() = runBlocking {
-    val isLocal = false
-    val baseUrl = if (isLocal) "http://localhost:8080/img" else "https://klip.arrived.com/img"
+    val isLocal = true
+    val baseUrl = if (isLocal) "http://localhost:8080/klip" else "https://klip.arrived.com/klip"
     val queryParams = listOf(
         "?quality=90&d=956x468",
         "?quality=90&w=512",
