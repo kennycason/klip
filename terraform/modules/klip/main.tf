@@ -202,8 +202,8 @@ resource "aws_ecs_task_definition" "klip_task" {
   family                   = "${var.service_name}-${var.stack}-task"
   requires_compatibilities = ["FARGATE"]
   network_mode             = "awsvpc"
-  cpu                      = 1024
-  memory                   = 2048
+  cpu                      = var.node_cpu
+  memory                   = var.node_memory
   execution_role_arn       = aws_iam_role.ecs_task_execution_role.arn
   task_role_arn            = aws_iam_role.ecs_task_role.arn
 
@@ -280,7 +280,7 @@ resource "aws_ecs_service" "klip_service" {
   name            = "${var.service_name}-${var.stack}-service"
   cluster         = aws_ecs_cluster.klip_cluster.id
   task_definition = aws_ecs_task_definition.klip_task.arn
-  desired_count   = 2
+  desired_count   = var.node_count
   launch_type     = "FARGATE"
 #  enable_execute_command = true # enable ssh access
 

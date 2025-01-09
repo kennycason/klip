@@ -27,8 +27,8 @@ fun main() = runBlocking {
         "?quality=75",
         "?crop&w=256&h=256&fit=contain"
     )
-    val concurrencyLevel = 50     // Number of concurrent requests
-    val totalRequests = 1000      // Total requests to send
+    val concurrencyLevel = 10     // Number of concurrent requests
+    val totalRequests = 500      // Total requests to send
     val timeoutMillis = 5000      // Timeout for each request in ms
     val maxRetries = 1           // Retry failed requests
 
@@ -245,6 +245,7 @@ val imagePaths = listOf(
     .shuffled()
 
 /*
+Fargate: nodes: 2, cpu: 1024, memory: 2048
 Total Requests: 1000
 Concurrency: 100
 Successes: 3000
@@ -275,6 +276,7 @@ Histogram (ms buckets): # requests
  */
 
 /*
+Fargate: nodes: 2, cpu: 1024, memory: 2048
 Test Results:
 Total Requests: 2500
 Concurrency: 250
@@ -309,6 +311,7 @@ Histogram (ms buckets): # requests
  */
 
 /*
+Fargate: nodes: 2, cpu: 1024, memory: 2048
 Test Results:
 Total Requests: 5000
 Concurrency: 400
@@ -349,4 +352,37 @@ Histogram (ms buckets): # requests
 3000-3099 ms: 4
 3300-3399 ms: 1
 3500-3599 ms: 1
+ */
+
+/*
+Fargate: nodes: 1, cpu: 1024, memory: 2048
+Total Requests: 1000
+Concurrency: 10
+Successes: 1000
+Failures: 0
+Avg Response Time: 285 ms
+Min Response Time: 86 ms
+Max Response Time: 2162 ms
+Histogram (ms buckets): # requests
+0-99 ms: 13
+100-199 ms: 342
+200-299 ms: 368
+300-399 ms: 147
+400-499 ms: 62
+500-599 ms: 24
+600-699 ms: 10
+700-799 ms: 5
+800-899 ms: 3
+900-999 ms: 4
+1000-1099 ms: 4
+1100-1199 ms: 4
+1200-1299 ms: 2
+1300-1399 ms: 2
+1400-1499 ms: 2
+1500-1599 ms: 4
+1700-1799 ms: 1
+1800-1899 ms: 1
+1900-1999 ms: 1
+2100-2199 ms: 1
+Errors (0 total):
  */

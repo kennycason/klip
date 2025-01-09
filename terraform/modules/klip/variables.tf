@@ -128,6 +128,18 @@ variable "route53_zone_id" {
   type = string
 }
 
+variable "node_count" {
+  type = number
+}
+
+variable "node_cpu" {
+  type = number
+}
+
+variable "node_memory" {
+  type = number
+}
+
 variable "tags" {
   type    = map(string)
   default = {}

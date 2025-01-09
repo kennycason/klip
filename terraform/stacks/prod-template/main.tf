@@ -16,8 +16,8 @@ module "klip" {
   klip_s3_cache_folder    = local.klip.s3_cache_folder
   klip_rules              = local.klip.rules
   klip_rules_file         = local.klip.rules_file
-  klip_canvas_rules      = local.klip.canvas_rules
-  klip_canvas_rules_file = local.klip.canvas_rules_file
+  klip_canvas_rules       = local.klip.canvas_rules
+  klip_canvas_rules_file  = local.klip.canvas_rules_file
   klip_gm_timeout_seconds = local.klip.gm_timeout_seconds
   klip_gm_memory_limit    = local.klip.gm_memory_limit
   klip_gm_map_limit       = local.klip.gm_map_limit
@@ -29,4 +29,7 @@ module "klip" {
   vpc_id                  = local.vpc_id
   route53_domain          = local.route53_domain
   route53_zone_id         = local.route53_zone_id
+  node_count              = local.node_count
+  node_cpu                = local.node_cpu
+  node_memory             = local.node_memory
 }

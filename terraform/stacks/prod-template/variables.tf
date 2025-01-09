@@ -27,8 +27,9 @@ locals {
     gm_disk_limit      = "512GB"
     gm_pool_size       = ""  # defaults to available processors if not set
   }
-  fargate_cpu     = 2048
-  fargate_memory  = 2048
+  node_count      = 2
+  node_cpu        = 2048
+  node_memory     = 2048
   vpc_id          = "vpc-<ID>"
   vpn_subnet_id   = "subnet-<ID>"
   private_subnets = [
