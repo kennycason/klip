@@ -137,7 +137,7 @@ GET http://localhost:8080/klip/properties/102/05013ad4469e00a7aed9596bc37af74e.j
 # Lower Quality
 GET http://localhost:8080/klip/properties/102/05013ad4469e00a7aed9596bc37af74e.jpg?quality=10
 # Combined with resizing
-GET http://localhost:8080/klip/properties/102/05013ad4469e00a7aed9596bc37af74e.jpg?quality=10&w1301h781
+GET http://localhost:8080/klip/properties/102/05013ad4469e00a7aed9596bc37af74e.jpg?quality=10&w=1301&h=781
 ```
 
 ### Image Comparison (click to enlarge)
